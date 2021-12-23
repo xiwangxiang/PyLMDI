@@ -1,4 +1,4 @@
-![PyLMDI_logo](\PyLMDI_logo.png)
+![PyLMDI_logo](PyLMDI_logo.png)
 
 # PyLMDI: An open source toolbox for LMDI decomposition analysis in Python
 
