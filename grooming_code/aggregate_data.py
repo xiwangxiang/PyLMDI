@@ -1,32 +1,24 @@
-#%%
+#using the funcitons from data_creation, we will create data that can be put into hte divisia function
 from PyLMDI import PyLMDI
 import pandas as pd
 import numpy as np
-import data_creation_functions 
-
-#load data in
-
-#import gdp data from excel
-gdp_data = pd.read_excel('input_data/divisia-test-input-data.xlsx', sheet_name='ind_sectoral_gdp')
-energy_data = pd.read_excel('input_data/divisia-test-input-data.xlsx', sheet_name='energy_use')
 
 emissions_divisia = False
+#load data in
+
 
 #%%
 if emissions_divisia:
     print('to do')
     #we will take in six diff data sets to insert into the divisia method
     #energy, activity, sturcture, energy intensity,fuel mix, emissions factor
-
-
 else:
     #we are just taking in energy, activity, sturcture, energy intensity
+    activity = pd.read_csv('intermediate_data/industry_activity.csv')
+    structure = pd.read_csv('intermediate_data/industry_structure.csv')
+    energy_intensity = pd.read_csv('intermediate_data/industry_energy_intensity.csv')
 
-    activity = data_creation_functions.activity(gdp_data)
-    energy_intensity = data_creation_functions.energy_intensity(gdp_data, energy_data)
-    structure = data_creation_functions.structure(gdp_data)
-
-    energy = data_creation_functions.structure(energy_data)
+    energy = pd.read_csv('intermediate_data/industry_energy.csv')
 
     #remove the weird remnants of pd's annoyuing index system (i should just learn it tbh)
     activity = activity.drop(['Unnamed: 0'], axis=1)
@@ -51,23 +43,6 @@ else:
 
     energy_wide = energy.pivot(index='Sector', columns='Year', values='PJ')
         
-
-#%%
-
-def Add(driver_input_data):
-    
-
-        
-def Add(self):
-    Delta_V = [sum(self.Vt)-np.sum(self.V0)]
-    for start, end in zip(self.X0, self.Xt):
-        temp = sum([ Lfun(self.Vt[i], self.V0[i]) * np.log(end[i]/start[i]) 
-                    for i in range(len(start))])
-        Delta_V.append(temp)       
-    return Delta_V
-
-    
-
     #now join alogehter again to make a dataframe with all the data we need
     #we will use this dataframe to pass to the divisia method
     #but during this we will also spearpatre the base year from the other subsequent years
@@ -91,5 +66,3 @@ def Add(self):
 
     Vt = np.array([energy_wide_t]).T
     V0 = np.array([energy_wide_base]).T
-
-
