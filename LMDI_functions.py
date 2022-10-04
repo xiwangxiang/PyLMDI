@@ -1,3 +1,5 @@
+#The details on the LMDI method which is quite complicated can be found here: https://drive.google.com/file/d/1wCd-S55JVrHoQwRV7w9qZSVxTlfiqGa8/view?usp=sharing
+#in all of the following functions we use the term energy but it can also be emissions, as that capacbiltiy has been built into the code.
 import pandas as pd
 import numpy as np
 

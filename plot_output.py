@@ -9,10 +9,10 @@ import plotly.express as px
 pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
 import plotly.io as pio
 pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-
-
+import plotly.graph_objects as go
+import plotly
 #%%
-def plot_multiplicative(data_title, extra_identifier, emissions_divisia):
+def plot_multiplicative(data_title, extra_identifier, emissions_divisia, time_variable='Year', structure_variable='Sector', graph_title=''):
     """
     data used by this function:
         
@@ -29,24 +29,58 @@ def plot_multiplicative(data_title, extra_identifier, emissions_divisia):
         lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
         lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
 
+        #remove the energy total from the data
+        lmdi_output_multiplicative.drop('Energy', axis=1, inplace=True)
+
         #need to make the data in long format first:
-        mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=['Year'], var_name='Driver', value_name='Value')
+        mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
         
         #create category based on whether dfata is driver or change in erggy use
         mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Change in energy' else 'Driver')
         #set title
-        title = '{}{} Drivers of changes in energy use'.format(data_title, extra_identifier)
+
+        if graph_title == '':
+            title = '{}{} - Multiplicative LMDI decomposition of energy use'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + ' - Multiplicative LMDI decomposition of energy use'
 
         #plot
-        fig2 = px.line(mult_plot, x="Year", y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Change in energy', 'Driver'],"Driver":['Change in energy', 'Activity', 'Structure', 'Energy intensity']})#,
+        fig2 = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Change in energy', 'Driver'],"Driver":['Change in energy', 'Activity', structure_variable, 'Energy intensity']})#,
 
-        import plotly
-        plotly.offline.plot(fig2, filename='./plotting_output/' + title + 'multiplicative_timeseries.html')
-        fig2.write_image("./plotting_output/static/" + title + 'multiplicative_timeseries.png')
 
+        plotly.offline.plot(fig2, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html')
+        fig2.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
+
+    else:
+        
+        #get data
+        lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
+        lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
+
+        #remove the Emissions total from the data
+        lmdi_output_multiplicative.drop('Emissions', axis=1, inplace=True)
+
+        #need to make the data in long format first:
+        mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
+        
+        #create category based on whether dfata is driver or change in erggy use
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Change in emissions' else 'Driver')
+
+        #set title
+        if graph_title == '':
+            title = '{}{} - Multiplicative LMDI decomposition of emissions'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + '- Multiplicative LMDI decomposition of emissions'
+
+        #plot
+        fig2 = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Change in emissions', 'Driver'],"Driver":['Change in emissions', 'Activity', structure_variable, 'Energy intensity', 'Emissions intensity']})#,
+
+        plotly.offline.plot(fig2, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html')
+        fig2.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
     
 #%%
-def plot_additive(data_title, extra_identifier, emissions_divisia):
+
+def plot_additive(data_title, extra_identifier, emissions_divisia, time_variable='Year', structure_variable='Sector', graph_title=''):
     """
     data used by this function:
         
@@ -58,9 +92,116 @@ def plot_additive(data_title, extra_identifier, emissions_divisia):
         emissions_divisia = False
     """
     if not emissions_divisia:
-        #try to find a way to plot the waterfall kind of  chart for the additive data
-        #it will use the final years' data from the additive drivers data and the first and final years energy data divided by 1000 i think.
-        #would be good to include options of choposing to plkot waterfalls between years making intervals betweeen first and last year. eg. 2020-2030-2040-2050
-        print('to do. additive not done yet')
+        
+        lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
+
+        #format data for additive plot
+        #use the latest year, and the energy value for the first year
+        beginning_year = lmdi_output_additive.Year.min()
+        final_year = lmdi_output_additive.Year.max()
+        add_plot_first_year_energy = lmdi_output_additive[lmdi_output_additive[time_variable] == beginning_year]['Energy'].values[0]
+        add_plot = lmdi_output_additive[lmdi_output_additive[time_variable] == final_year]
+
+        base_amount = add_plot_first_year_energy/2
+
+        if graph_title == '':
+            title = '{}{} - Additive LMDI decomposition of energy use'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + ' - Additive LMDI decomposition of energy use'
+
+        fig = go.Figure(go.Waterfall(
+            orientation = "v",
+            measure = ["absolute", "relative", "relative", "relative", "total"],
+            base = base_amount,
+
+            x = [str(beginning_year) + ' total energy use',
+            "Activity", structure_variable,"Energy intensity",
+            str(final_year)+' total energy use'],
+
+            textposition = "outside",
+
+            text = [int(add_plot_first_year_energy), 
+            str(int(add_plot["Activity"].round(0).iloc[0])), 
+            str(int(add_plot[structure_variable].round(0).iloc[0])),
+            str(int(add_plot["Energy intensity"].round(0).iloc[0])), 
+            str(int(add_plot["Energy"].round(0).iloc[0]))],
+
+            y = [add_plot_first_year_energy-base_amount, 
+            add_plot["Activity"].iloc[0],
+            add_plot[structure_variable].iloc[0],
+            add_plot["Energy intensity"].iloc[0],
+            add_plot["Energy"].iloc[0]],
+
+            connector = {"line":{"color":"black"}},
+
+            decreasing = {"marker":{"color":"Green"}},
+            increasing = {"marker":{"color":"Red"}},
+            totals = {"marker":{"color":"deep sky blue"}}
+        ))
+
+        fig.update_layout(
+                title = title
+        )
+
+        plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html')
+        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
+
+    else:
+
+        lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
+
+        #format data for additive plot
+        #use the latest year, and the energy value for the first year
+        beginning_year = lmdi_output_additive.Year.min()
+        final_year = lmdi_output_additive.Year.max()
+        add_plot_first_year_emissions = lmdi_output_additive[lmdi_output_additive[time_variable] == beginning_year]['Emissions'].values[0]
+        add_plot = lmdi_output_additive[lmdi_output_additive[time_variable] == final_year]
+        
+        base_amount = add_plot_first_year_energy/2
+
+        if graph_title == '':
+            title = '{}{} - Additive LMDI decomposition of emissions'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + ' - Additive LMDI decomposition of emissions'
+
+
+        fig = go.Figure(go.Waterfall(
+            orientation = "v",
+            measure = ["absolute", "relative", "relative", "relative", "relative", "total"],
+            base = base_amount,
+
+            x = [str(beginning_year) + ' total emissions', "Activity", structure_variable,"Energy intensity", "Emissions intensity",str(final_year)+' total emissions'],
+
+            textposition = "outside",
+
+            text = [int(add_plot_first_year_emissions), 
+            str(int(add_plot["Activity"].round(0).iloc[0])), 
+            str(int(add_plot[structure_variable].round(0).iloc[0])),
+            str(int(add_plot["Energy intensity"].round(0).iloc[0])), 
+            str(int(add_plot["Emissions intensity"].round(0).iloc[0])), 
+            str(int(add_plot["Emissions"].round(0).iloc[0]))],
+
+            y = [add_plot_first_year_emissions-base_amount, 
+            add_plot["Activity"].iloc[0],
+            add_plot[structure_variable].iloc[0],
+            add_plot["Emissions intensity"].iloc[0],
+            add_plot["Emissions"].iloc[0]],
+
+            connector = {"line":{"color":"black"}},
+
+            decreasing = {"marker":{"color":"Green"}},
+            increasing = {"marker":{"color":"Red"}},
+            totals = {"marker":{"color":"deep sky blue"}}
+        ))
+
+        fig.update_layout(
+                title = title
+        )
+
+        plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html')
+        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
 #%%
+
+
+# %%
