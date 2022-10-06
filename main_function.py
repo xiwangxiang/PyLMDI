@@ -112,6 +112,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         energy_intensity_wide = energy_intensity_wide.pivot(index=structure_variable, columns=time_variable, values='Energy_intensity')
 
         emissions_intensity_wide = activity_structure_energyintensity_emissionsintensity[[time_variable,structure_variable,'Emissions_intensity']]
+        emissions_intensity_wide = emissions_intensity_wide.pivot(index=structure_variable, columns=time_variable, values='Emissions_intensity')
 
         emissions_wide = emissions.pivot(index=structure_variable, columns=time_variable, values=emissions_variable)
 
@@ -126,10 +127,10 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
         emissions_intensity_driver, emissions_change = LMDI_functions.Add(emissions_intensity_wide, emissions_wide)
 
-        emissions_col = energy[[time_variable, emissions_variable]].groupby([time_variable]).sum()
+        emissions_col = emissions[[time_variable, emissions_variable]].groupby([time_variable]).sum()
 
         #concat all data together:
-        lmdi_output_additive = pd.concat({'Activity': activity_driver, structure_variable: structure_driver, 'Energy intensity': energy_intensity_driver, 'Emmissions intensity': emissions_intensity_driver, 'Change in emissions' : emissions_change,  'Emissions':emissions_col[emissions_variable]}, axis=1)
+        lmdi_output_additive = pd.concat({'Activity': activity_driver, structure_variable: structure_driver, 'Energy intensity': energy_intensity_driver, 'Emissions intensity': emissions_intensity_driver, 'Change in emissions' : emissions_change,  'Emissions':emissions_col[emissions_variable]}, axis=1)
         #now calcualte the mult drivers usiung the input data.
         activity_driver_mult, emissions_change_mult = LMDI_functions.Mult(activity_wide, emissions_wide)
 
