@@ -5,78 +5,77 @@ import pandas as pd
 import numpy as np
 import os
 
-def activity(activity_data, structure_variable,activity_variable, time_variable='Year'):
+def format_activity(activity_data,activity_variable, time_variable):
+    """
+    This function takes the activity data and returns the sum of the activity for each year
+    This function is unaffected by whetehr there is one or more structural variables"""
+    #group by year and sum up all sectors so we have the total activity for each year
+    activity_data_total = activity_data.groupby(time_variable)[activity_variable].sum().reset_index()
 
-    #make data long
-    long_data = activity_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name='Total_{}'.format(activity_variable))
-
-    #group by year and sum up all sectors to ccreate total column from which we'll calc thne structure
-    long_data_total = long_data.groupby([time_variable]).sum().reset_index()
+    #rename the activity variable to total activity
+    activity_data_total = activity_data_total.rename(columns={activity_variable:'Total_{}'.format(activity_variable)})
 
     #create a new dataframe with the structure by get5ting only the colzs we want
-    activity = long_data_total[[time_variable,'Total_{}'.format(activity_variable)]]
-
-    #save
-    # pd.DataFrame.to_csv(activity, 'intermediate_data/industry_activity.csv')
+    activity = activity_data_total[[time_variable,'Total_{}'.format(activity_variable)]]
 
     return activity
 
-def structure(activity_data, structure_variable,activity_variable, time_variable='Year'):
-    #make data long
-    long_data = activity_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=activity_variable)
+def format_structure_multiple(activity_data,structure_variables_list,activity_variable, time_variable):
 
-    #group by year and sum up all sectors to ccreate total column from which we'll calc thne structure
-    long_data_total = long_data.groupby([time_variable]).sum()
+    #this is intended to be used for any number of structure variables, even just one. 
+    #go through list of structural variables, calculating their share of the total activity for each year, but in a way that works for hierarchical structure.
+    #let's assume we have the following structure variables: ['Economy','Vehicle Type', 'Drive']
+    #so for example, for the first structure variable, Economy, we will calculate the share of the total activity for each year, for each instance of that structural variable.
+    #then for the second structure variable, Vehicle Type, we will calculate the share of the total activity for each economy for each year, for each instance of that structural variable.
+    #then for the third structure variable, Drive, we will calculate the share of the total activity for each economy and vehicle type for each year, for each instance of that structural variable.
+    #this will be done with indexing, so that we can use the same function for any number of structure variables.
 
-    #merge long data total to long data on the years column so we havbe a industry total for each sector and year
-    long_data= pd.merge(long_data,long_data_total,on=time_variable, how='left')
+    activity_data_new = activity_data.copy().drop(columns=[activity_variable])
 
-    long_data['{}_share_of_{}'.format(structure_variable,activity_variable)] = long_data['{}_x'.format(activity_variable)] / long_data['{}_y'.format(activity_variable)]#gdp_x is original, gdp_y is the total
+    structure_share_values_names = []#this will be reutnred at the end of the function
+
+    for i in range(0, len(structure_variables_list)):
+        structure_variable_i = structure_variables_list[i]
+        previous_structure_variables = structure_variables_list[0:i]
+
+        #sum the activity for previous_structure_variables plus the structure_variable_i for each year
+        activity_data_i = activity_data.groupby(previous_structure_variables + [time_variable, structure_variable_i])[activity_variable].sum().reset_index()
+        #calculate the share of the total activity for each previous_structure_variables for each year, for each instance of that structural variable.
+        activity_data_i[structure_variable_i + '_share'] = activity_data_i.groupby(previous_structure_variables + [time_variable])[activity_variable].apply(lambda x: x / x.sum())
+        #drop the activity variable, as we don't need it anymore
+        activity_data_i = activity_data_i.drop(activity_variable, axis=1)
+
+        #merge the data onto a copy of the original long data
+        activity_data_new = activity_data_new.merge(activity_data_i, on=previous_structure_variables + [time_variable, structure_variable_i], how='left')
+
+        #record structure variable values names
+        structure_share_values_names.append(structure_variable_i + '_share')
+
+    return activity_data_new, structure_share_values_names
+
+def format_energy_intensity(activity_data, energy_data, structure_variables_list, activity_variable, energy_variable, time_variable):
+    #Calculate energy intensity for every year, for every unique combination of structure variables
+
+    #join activity and energy data together
+    data = pd.merge(activity_data,energy_data,on=[time_variable]+structure_variables_list, how='left')
     
-    #create a new dataframe with the structure by get5ting only the colzs we want
-    structure = long_data[[time_variable, structure_variable, '{}_share_of_{}'.format(structure_variable,activity_variable)]]
-
-    return structure
-
-
-def energy_intensity(activity_data, energy_data, structure_variable, activity_variable, energy_variable='PJ', time_variable='Year'):
-    #make data long
-    long_data_pj = energy_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=energy_variable)
-    long_data_gdp = activity_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=activity_variable)
-
-    #join data together
-    long_data = pd.merge(long_data_pj,long_data_gdp,on=[time_variable,structure_variable], how='left')
-
     #calcualte intensity as enegry / gdp
-    long_data['Energy_intensity'] = long_data[energy_variable] / long_data[activity_variable]
+    data['{} intensity'.format(energy_variable)] = data[energy_variable] / data[activity_variable]
 
     #create a new dataframe with the structure by getting only the colzs we want
-    energy_intensity = long_data[[time_variable,structure_variable,'Energy_intensity']]
+    energy_intensity = data[[time_variable,'{} intensity'.format(energy_variable)] + structure_variables_list]
 
     return energy_intensity
 
-def energy(energy_data,structure_variable, energy_variable='PJ', time_variable='Year'):
-    #just get the energy data in the long format
-    energy = energy_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=energy_variable)
-    return energy
-
-def emissions_intensity(emissions_data, energy_data, structure_variable, emissions_variable='MtCO2', energy_variable='PJ', time_variable='Year'):
-    #make data long
-    long_data_pj = energy_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=energy_variable)
-    long_data_emissions = emissions_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=emissions_variable)
-
+def format_emissions_intensity(emissions_data, energy_data, structure_variables_list, emissions_variable, energy_variable, time_variable):
+    #Calculate emissions intensity for every year, for every unique combination of structure variables
     #join data together
-    long_data = pd.merge(long_data_pj,long_data_emissions,on=[time_variable,structure_variable], how='left')
+    data = pd.merge(energy_data,emissions_data,on=[time_variable]+structure_variables_list, how='left')
 
     #calcualte intensity as emissions / enegry
-    long_data['Emissions_intensity'] = long_data[emissions_variable] / long_data[energy_variable]
+    data['{} intensity'.format(emissions_variable)] = data[emissions_variable] / data[energy_variable]
 
     #create a new dataframe with the structure by getting only the colzs we want
-    emissions_intensity = long_data[[time_variable,structure_variable,'Emissions_intensity']]
+    emissions_intensity = data[[time_variable,'{} intensity'.format(emissions_variable)] + structure_variables_list]
 
     return emissions_intensity
-
-def emissions(emissions_data,structure_variable, emissions_variable='MtCO2', time_variable='Year'):
-    #just get the emissions data in the long format
-    emissions = emissions_data.melt(id_vars=[structure_variable], var_name=time_variable, value_name=emissions_variable)
-    return emissions

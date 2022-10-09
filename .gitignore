@@ -145,6 +145,8 @@ env_no_jupyter/*
 #except any files in these folders
 !config/*
 # !other_outputs/*
-!input_data/*
+!input_data/**
 !documentation/*
+
+
 
