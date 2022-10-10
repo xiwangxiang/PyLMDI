@@ -14,7 +14,7 @@ pio.renderers.default = "browser"#allow plotting of graphs in the interactive no
 import plotly.graph_objects as go
 import plotly
 #%%
-def plot_multiplicative_timeseries(data_title, extra_identifier, structure_variables_list,activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=False, time_variable='Year', graph_title='', residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=25,AUTO_OPEN=False):
+def plot_multiplicative_timeseries(data_title, extra_identifier, structure_variables_list,activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=False, time_variable='Year', graph_title='', residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=25,AUTO_OPEN=False, hierarchical=False):
     """
     data used by this function:
         
@@ -28,7 +28,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
         residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
     """
-    if not emissions_divisia:
+    if emissions_divisia == False and hierarchical == False:
         
         #get data
         lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
@@ -48,9 +48,9 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         #set title
 
         if graph_title == '':
-            title = '{}{} - Multiplicative LMDI decomposition of energy use'.format(data_title, extra_identifier)
+            title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Multiplicative LMDI decomposition of energy use'
+            title = graph_title + ' - Multiplicative LMDI'
 
         #plot
         fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Percent change in {}'.format(energy_variable), 'Driver'],"Driver":['Percent change in {}'.format(energy_variable), 'Activity']+structure_variables_list+[residual_variable1]})#,
@@ -64,7 +64,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html', auto_open=AUTO_OPEN)
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
 
-    else:
+    elif emissions_divisia == True and hierarchical == False:
         
         #get data
         lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
@@ -105,12 +105,48 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html',auto_open=AUTO_OPEN)
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
     
+    elif emissions_divisia == False and hierarchical == True:
+        #for hiierarchical we jsut have to deal having an intensity effect for each structure variable rather than one with the name of the residual variable the user sets
+        
+        #get data
+        lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier))
+
+        # #rename the energy intensity column to residual_variable1
+        # lmdi_output_multiplicative.rename(columns={'{} intensity'.format(energy_variable):residual_variable1}, inplace=True)
+        
+        #need to make the data in long format so we have a driver column instead fo a column for each driver:
+        mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
+
+        #create category based on whether data is driver or change in energy use
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Percent change in {}'.format(energy_variable) else 'Driver')
+        #set title
+
+        if graph_title == '':
+            title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + ' - Multiplicative LMDI'
+
+        #plot
+        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title)#, category_orders={"Line type":['Percent change in {}'.format(energy_variable), 'Driver'],"Driver":['Percent change in {}'.format(energy_variable), 'Activity']+structure_variables_list+[residual_variable1]})#,
+
+        fig.update_layout(
+            font=dict(
+                size=font_size
+            )
+        )
+
+        plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html', auto_open=AUTO_OPEN)
+        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
+
+
+
+    
 #%%
 ######################################################
 ######################################################
 
 
-def plot_additive_waterfall(data_title, extra_identifier, structure_variables_list, activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=False, time_variable='Year', graph_title='', residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=25,y_axis_min_percent_decrease=0.9,AUTO_OPEN=False):
+def plot_additive_waterfall(data_title, extra_identifier, structure_variables_list, activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=False, time_variable='Year', graph_title='', residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=25,y_axis_min_percent_decrease=0.9,AUTO_OPEN=False, hierarchical=False):
     """
     data used by this function:
         
@@ -124,7 +160,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
         residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
     """
-    if not emissions_divisia:
+    if emissions_divisia == False and hierarchical == False:
         
         lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
 
@@ -195,7 +231,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html',auto_open=AUTO_OPEN)
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
-    else:
+    elif emissions_divisia  == True and hierarchical == False:
         #this is for emissions plot:
         lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
 
@@ -262,6 +298,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html',auto_open=AUTO_OPEN)
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
-
+    elif emissions_divisia == False and hierarchical == True:
+        print('Please note that the hierarchical LMDI does not currently support waterfall plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
 ##%%
 
