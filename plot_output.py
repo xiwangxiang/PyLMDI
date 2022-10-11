@@ -299,6 +299,6 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
     elif emissions_divisia == False and hierarchical == True:
-        print('Please note that the hierarchical LMDI does not currently support waterfall plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
+        print('Please note that the hierarchical LMDI method only produces a multiplicative output. However the output can be timesed by the absolute energy use to      does not currently support  plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
 ##%%
 

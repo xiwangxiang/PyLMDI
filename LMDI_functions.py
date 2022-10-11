@@ -107,6 +107,15 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
     #If Year is base year, replace NAs with 1
     lmdi_output_multiplicative = lmdi_output_multiplicative.fillna(1)
 
+    #check that the product of drivers in each year is equal to the percent change in energy
+    lmdi_output_multiplicative['product'] = lmdi_output_multiplicative[drivers_list_new].product(axis=1)
+    lmdi_output_multiplicative['difference'] = lmdi_output_multiplicative['product'] - lmdi_output_multiplicative['Percent change in {}'.format(energy_variable)]
+    total_difference = lmdi_output_multiplicative['difference'].sum().sum()
+    if abs(total_difference) > 0.01:
+        print('WARNING: The product of the drivers in each year is not equal to the percent change in energy. The difference is {}'.format(total_difference))
+    #drop the product and difference columns
+    lmdi_output_multiplicative = lmdi_output_multiplicative.drop(columns=['product', 'difference'])
+
     return lmdi_output_multiplicative
 
 ############################################### 
@@ -191,6 +200,20 @@ def Add(driver_input_data, energy_data, drivers_list, structure_variables_list,e
     lmdi_output_additive = pd.concat([new_row.to_frame().T,lmdi_output_additive])
     #If Year is base year, replace NAs with 0
     lmdi_output_additive = lmdi_output_additive.fillna(0)
+
+    #test that the sum of the effects in final year is equal to the change in energy
+    #sum the effects
+    lmdi_output_additive['sum of effects'] = lmdi_output_additive[drivers_list_new].sum(axis=1)
+    #calc difference between sum of effects and change in energy
+    lmdi_output_additive['difference'] = lmdi_output_additive['sum of effects'] - lmdi_output_additive['Change in {}'.format(energy_variable)]
+    #calcaulte the total difference
+    total_difference = lmdi_output_additive['difference'].sum().sum()
+    #check that the total difference is less than 0.001
+    if abs(total_difference) > 0.001:
+        print('WARNING: The sum of the effects is not equal to the change in energy for one or more years. This is likely due to rounding errors. Please check the output.')
+        print('The total difference is: {}'.format(total_difference))
+    #drop the difference column
+    lmdi_output_additive = lmdi_output_additive.drop(columns=['difference','sum of effects'])
 
     return lmdi_output_additive
 
@@ -448,7 +471,7 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #merge the top and bot values and claculate the weighting value
     weighting_df = pd.merge(weighting_df_top, weighting_df_bot, on=[time_variable])
     weighting_df['weighting_value'] = weighting_df['weighting_log_mean_top'] / weighting_df['weighting_log_mean_bot']
-    #drop the columns we don't need
+    #drop the columns we donft need
     weighting_df.drop(columns=['weighting_log_mean_top', 'weighting_log_mean_bot'], inplace=True)
     #merge the weighting value back into the big df
     big_df = pd.merge(big_df, weighting_df, on=[time_variable, structure_variable])
@@ -468,21 +491,6 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     activity_driver = activity_driver.groupby([time_variable])['activity_driver'].sum().reset_index()
     #calc the exponential
     activity_driver['activity_driver'] = np.exp(activity_driver['activity_driver'])
-
-    
-    #6
-    #first structural level intensity driver = exp( SUM( Weighting value * ln(intensity_other_years/intensity_base_year) ) ) 
-    #where intensity is for the first structural level
-    first_structural_level_intensity_driver = big_df[[time_variable, 'log_intensity_{}'.format(structure_variables_list[0]), 'weighting_value']]
-    #remove duplicates
-    first_structural_level_intensity_driver = first_structural_level_intensity_driver.drop_duplicates()
-    #times the weighting value by the log value
-    first_structural_level_intensity_driver['first_structural_level_intensity_driver'] = first_structural_level_intensity_driver['log_intensity_{}'.format(structure_variables_list[0])] * first_structural_level_intensity_driver['weighting_value']
-    #sum the first_structural_level_intensity_driver by year
-    first_structural_level_intensity_driver = first_structural_level_intensity_driver.groupby([time_variable])['first_structural_level_intensity_driver'].sum().reset_index()
-    #calc the exponential
-    first_structural_level_intensity_driver['first_structural_level_intensity_driver'] = np.exp(first_structural_level_intensity_driver['first_structural_level_intensity_driver'])
-
     
     #7
     #first structural level structural driver = exp( SUM( Weighting value * ln(structural_share_other_years/structural_share__base_year) ) )
@@ -532,11 +540,11 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     for structural_variable in structure_variables_list[1:]:
         structural_variable_index = structure_variables_list.index(structural_variable)
         #get the data
-        successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structural_variable), structure_variables_list[0]]]
+        successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structural_variable), 'intensity_log_mean_ratio_{}'.format(structural_variable), structure_variables_list[0]]]
         #remove duplicates
         successive_structural_level_structural_driver = successive_structural_level_structural_driver.drop_duplicates()
         #times the intensity_log_mean_ratio_ by the log value
-        successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structural_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structure_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structural_variable)]
+        successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structural_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structural_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structural_variable)]
         #sum the successive_structural_level_structural_driver by year and the first structural level
         successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_structural_driver_{}'.format(str(structural_variable_index))].sum().reset_index()
         #times the weighting value by the log value
@@ -557,7 +565,6 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #GREAT GOOD WORK! 
     #we have now calculated all the drivers. We will rename them and put them in one dataframe with a time variable and the ratio between other eyars and base years in total energy,  then we are done!
     drivers_df = activity_driver.copy()
-    drivers_df = drivers_df.merge(first_structural_level_intensity_driver, on=time_variable)
     drivers_df = drivers_df.merge(first_structural_level_structural_driver, on=time_variable)
     for structural_variable in structure_variables_list[1:]:
         structural_variable_index = structure_variables_list.index(structural_variable)
@@ -578,8 +585,8 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #merge the drivers with the ratio
     drivers_df = drivers_df.merge(pct_change[[time_variable, 'energy_pct_change']], on=time_variable)
 
-    #rename the columns
-    drivers_df = drivers_df.rename(columns={'activity_driver': '{}'.format(activity_variable), 'first_structural_level_intensity_driver': '{} intensity'.format(structure_variables_list[0]), 'first_structural_level_structural_driver': '{}'.format(structure_variables_list[0]),'energy_pct_change': 'Percent change in {}'.format(energy_variable)})
+    #rename the columns #, 'first_structural_level_intensity_driver': '{} intensity'.format(structure_variables_list[0])
+    drivers_df = drivers_df.rename(columns={'activity_driver': '{}'.format(activity_variable), 'first_structural_level_structural_driver': '{}'.format(structure_variables_list[0]),'energy_pct_change': 'Percent change in {}'.format(energy_variable)})
 
     for structural_variable in structure_variables_list[1:]:
         structural_variable_index = structure_variables_list.index(structural_variable)
@@ -588,6 +595,18 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #add effect to the end of all names except 'Percent change in {}'.format(energy_variable) and Year
     drivers_df.columns = [col + ' effect' if col not in ['Percent change in {}'.format(energy_variable), time_variable] else col for col in drivers_df.columns]
 
+    #check that the product of drivers in each year is equal to the percent change in energy
+    drivers_list = drivers_df.columns.tolist()
+    drivers_list.remove('Percent change in {}'.format(energy_variable))
+    drivers_list.remove(time_variable)
+
+    drivers_df['product'] = drivers_df[drivers_list].product(axis=1)
+    drivers_df['difference'] = drivers_df['product'] - drivers_df['Percent change in {}'.format(energy_variable)]
+    total_difference = drivers_df['difference'].sum().sum()
+    if abs(total_difference) > 0.01:
+        print('WARNING: The product of the drivers in each year is not equal to the percent change in energy. The difference is {}'.format(total_difference))
+    #drop the product and difference columns
+    drivers_df = drivers_df.drop(columns=['product', 'difference'])
     #now we are done. return drivers_df
     return drivers_df
 

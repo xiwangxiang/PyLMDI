@@ -110,7 +110,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
     elif emissions_divisia==False and hierarchical==True:
         #run hierarchical fully from a separate script in LMDI_functions.py
-        print('Running hierarchical LMDI for energy. Please note that i am not 100% on whether this works as expected for more than 2 structural variables. Please check the output carefully.')
+        print('Running hierarchical LMDI for energy. Please note that i am not 100% on whether this works as expected for more than 2 structural variables. Please check the output carefully. The product of all drivers in a given year t should equal energy_total_t/energy_total_base_year.')
         hierarchical_multiplicative_output = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable)
 
         hierarchical_multiplicative_output.to_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier), index=False)
