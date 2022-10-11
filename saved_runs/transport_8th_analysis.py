@@ -116,8 +116,14 @@ for combination_dict in combination_dict_list:
 
 #%%
 
+lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier))
 
-# #%%
+
+#check what that the values in the output for each year except for time variable and Percent change in {} add to 
+lmdi_output_multiplicative['yearly_prodcut'] = lmdi_output_multiplicative[lmdi_output_multiplicative.columns[~lmdi_output_multiplicative.columns.isin([time_variable, 'Percent change in {}'.format(energy_variable)])]].product(axis=1)
+print('The sum of the values in the output for each year except for time variable and Percent change in {} add to:'.format(lmdi_output_multiplicative['yearly_sum']))
+
+#%%
 #ANALYSIS OF THE INPUT DATA
 # # compare total energy in each of the data frames 
 # all_data = pd.read_csv('input_data/tranport_8th/activity_efficiency_energy_road_stocks.csv')
