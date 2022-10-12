@@ -11,6 +11,13 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
     """This is a central function that will run the LMDI model. It will take the input data and format/adjust it using the functions in data_creation_functions.py. 
     It will then run the LMDI model and save the output. It will also plot the output.
     If you want to run the method using emissions intensity then you jsut set emissions divisia to true and include data for emissions_data"""
+    #first, if there are any 0's in the data replace them with a very small number. This means we dont have to deal with any issues with dividing by 0, and given the context of the data, it is unlikely that the 0's are actually 0, or even the result of replacing 0's with small numbers will have a noticeable impact on the results.
+    activity_data[activity_variable] = activity_data[activity_variable].replace(0,0.00000001)
+    energy_data[energy_variable] = energy_data[energy_variable].replace(0,0.00000001)
+    if emissions_divisia==True:
+        emissions_data[emissions_variable] = emissions_data[emissions_variable].replace(0,0.00000001)
+        
+    #Now start the process of running the LMDI model
     if emissions_divisia == False and hierarchical == False:
         #we are just taking in energy, activity, sturcture, energy intensity. 
         #In the future, if emissions_divisia == True we will have the ability to calcualte emissions related LMDI outputs for that
@@ -36,16 +43,21 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         ###################################
         #run LMDI_functions for additivie and multpiplicatuve outputs from the LMDI_functions.py file. It is the meat and sausages of this process.
         
-        lmdi_output_additive = LMDI_functions.Add(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,activity_variable)
+        lmdi_output_additive = LMDI_functions.Add(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,extra_identifier)
 
-        lmdi_output_multiplicative = LMDI_functions.Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,activity_variable)
+        lmdi_output_multiplicative = LMDI_functions.Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,extra_identifier)
 
         ###################################
         #add energy and activity (summed per year) as a column since this is very useful for analysis
-        lmdi_output_additive['Total {}'.format(energy_variable)] = energy_data.groupby(time_variable).sum().reset_index()[energy_variable]
-        lmdi_output_multiplicative['Total {}'.format(energy_variable)] = energy_data.groupby(time_variable).sum().reset_index()[energy_variable]
-        lmdi_output_additive = lmdi_output_additive.merge(activity, on=time_variable, how='left')
-        lmdi_output_multiplicative = lmdi_output_multiplicative.merge(activity, on=time_variable, how='left')
+        total_energy = energy_data.groupby(time_variable).sum().reset_index()
+        total_energy = total_energy.rename(columns={energy_variable:'Total {}'.format(energy_variable)})
+        total_activity = activity_data.groupby(time_variable).sum().reset_index()
+        total_activity = total_activity.rename(columns={activity_variable:'Total_{}'.format(activity_variable)})
+        lmdi_output_additive = pd.merge(lmdi_output_additive,total_energy,on=[time_variable], how='left')
+        lmdi_output_additive = pd.merge(lmdi_output_additive,total_activity,on=[time_variable], how='left')
+        lmdi_output_multiplicative = pd.merge(lmdi_output_multiplicative,total_energy,on=[time_variable], how='left')
+        lmdi_output_multiplicative = pd.merge(lmdi_output_multiplicative,total_activity,on=[time_variable], how='left')
+        
         ###################################
         #save data:
         lmdi_output_additive.to_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier), index=False)
@@ -83,9 +95,9 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         ###################################
         #run LMDI_functions for additivie and multpiplicatuve outputs from the LMDI_functions.py file. It is the meat and sausages of this process.
         
-        lmdi_output_additive = LMDI_functions.Add(driver_input_data, emissions_data, drivers_list, structure_variables_list,emissions_variable,time_variable,activity_variable)
+        lmdi_output_additive = LMDI_functions.Add(driver_input_data, emissions_data, drivers_list, structure_variables_list,emissions_variable,time_variable,extra_identifier)
 
-        lmdi_output_multiplicative = LMDI_functions.Mult(driver_input_data, emissions_data, drivers_list, structure_variables_list,emissions_variable,time_variable,activity_variable)
+        lmdi_output_multiplicative = LMDI_functions.Mult(driver_input_data, emissions_data, drivers_list, structure_variables_list,emissions_variable,time_variable,extra_identifier)
 
         ###################################
         #replace energy in 'change in energy' col names with emissions
@@ -94,12 +106,15 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
         ###################################
         #add emissions and activity (summed per year) as a column since this is very useful for analysis
-        lmdi_output_additive['Total {}'.format(emissions_variable)] = emissions_data.groupby(time_variable).sum().reset_index()[emissions_variable]
-        lmdi_output_multiplicative['Total {}'.format(emissions_variable)] = emissions_data.groupby(time_variable).sum().reset_index()[emissions_variable]
-        lmdi_output_additive['Total {}'.format(energy_variable)] = energy_data.groupby(time_variable).sum().reset_index()[energy_variable]
-        lmdi_output_multiplicative['Total {}'.format(energy_variable)] = energy_data.groupby(time_variable).sum().reset_index()[energy_variable]
-        lmdi_output_additive = lmdi_output_additive.merge(activity, on=time_variable, how='left')
-        lmdi_output_multiplicative = lmdi_output_multiplicative.merge(activity, on=time_variable, how='left')
+        total_emissions = emissions_data.groupby(time_variable)[emissions_variable].sum().reset_index()
+        total_emissions = total_emissions.rename(columns={emissions_variable:'Total {}'.format(emissions_variable)})
+        total_activity = activity_data.groupby(time_variable)[activity_variable].sum().reset_index()
+        total_activity = total_activity.rename(columns={activity_variable:'Total_{}'.format(activity_variable)})
+        lmdi_output_additive = pd.merge(lmdi_output_additive,total_emissions,on=[time_variable], how='left')
+        lmdi_output_additive = pd.merge(lmdi_output_additive,total_activity,on=[time_variable], how='left')
+        lmdi_output_multiplicative = pd.merge(lmdi_output_multiplicative,total_emissions,on=[time_variable], how='left')
+        lmdi_output_multiplicative = pd.merge(lmdi_output_multiplicative,total_activity,on=[time_variable], how='left')
+        
         ##################################
 
         #save data:
@@ -110,9 +125,14 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
     elif emissions_divisia==False and hierarchical==True:
         #run hierarchical fully from a separate script in LMDI_functions.py
-        print('Running hierarchical LMDI for energy. Please note that i am not 100% on whether this works as expected for more than 2 structural variables. Please check the output carefully. The product of all drivers in a given year t should equal energy_total_t/energy_total_base_year.')
-        hierarchical_multiplicative_output = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable)
+        print('Running hierarchical LMDI for energy.')
+        #check that structure_variables_list length is > 1, if it is not, tell the user to use other method
+        if len(structure_variables_list) < 2:
+            print('You need to have more than one structure variable to run hierarchical LMDI. Please use the other method.')
+            return None
 
+        hierarchical_multiplicative_output = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier)
+        
         hierarchical_multiplicative_output.to_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier), index=False)
 
 #%%
