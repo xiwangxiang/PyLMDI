@@ -69,6 +69,17 @@ combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'pas
 combination_dict_list.append({'scenario':'Reference', 'transport_type':'freight', 'medium':'everything', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (Ref)', 'extra_identifier':'FREIGHT_REF_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
 combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'everything', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
 
+#and now with an extra structure variable, Economy at the beginning of the list. We will also change extra_identifier to PASSENGER_REF_ECONOMY_MODE_DRIVE_ROAD_HIERARCHICAL
+combination_dict_list.append({'scenario':'Reference', 'transport_type':'passenger', 'medium':'road', 'activity_variable':'passenger_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (Ref)', 'extra_identifier':'PASSENGER_REF_ECONOMY_MODE_DRIVE_ROAD_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'passenger', 'medium':'road', 'activity_variable':'passenger_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (CN)', 'extra_identifier':'PASSENGER_CN_ECONOMY_MODE_DRIVE_ROAD_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Reference', 'transport_type':'freight', 'medium':'road', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (Ref)', 'extra_identifier':'FREIGHT_REF_ECONOMY_MODE_DRIVE_ROAD_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'road', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_ECONOMY_MODE_DRIVE_ROAD_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+#for medium is everything
+combination_dict_list.append({'scenario':'Reference', 'transport_type':'passenger', 'medium':'everything', 'activity_variable':'passenger_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (Ref)', 'extra_identifier':'PASSENGER_REF_ECONOMY_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'passenger', 'medium':'everything', 'activity_variable':'passenger_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (CN)', 'extra_identifier':'PASSENGER_CN_ECONOMY_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Reference', 'transport_type':'freight', 'medium':'everything', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (Ref)', 'extra_identifier':'FREIGHT_REF_ECONOMY_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'everything', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_ECONOMY_MODE_DRIVE_HIERARCHICAL', 'emissions_divisia':False, 'hierarchical':True})
+
 #%%
 #create loop to run through the combinations
 for combination_dict in combination_dict_list:
@@ -84,12 +95,13 @@ for combination_dict in combination_dict_list:
     else:
         data = data[data['Medium']==combination_dict['medium']]
 
+    structure_variables_list = combination_dict['structure_variables_list']
     #sum the data
-    data = data.groupby(['Year', 'Vehicle Type', 'Drive']).sum().reset_index()
-    # Separate energy and activity data
-    energy_data = data[['Year', 'Vehicle Type', 'Drive', 'Energy']]
-    activity_data = data[['Year', 'Vehicle Type', 'Drive', 'Activity']]
-    emissions_data = data[['Year', 'Vehicle Type', 'Drive', 'Emissions']]
+    data = data.groupby(['Year']+structure_variables_list).sum().reset_index()
+    #Separate energy and activity data
+    energy_data = data[['Year','Energy']+structure_variables_list]
+    activity_data = data[['Year', 'Activity']+structure_variables_list]
+    emissions_data = data[['Year',  'Emissions']+structure_variables_list]
     #rename activity with variable
     activity_data = activity_data.rename(columns={'Activity':combination_dict['activity_variable']})
 
@@ -106,6 +118,7 @@ for combination_dict in combination_dict_list:
     residual_variable1='Energy intensity'
     emissions_divisia = combination_dict['emissions_divisia']
     hierarchical = combination_dict['hierarchical']
+    
     #run LMDI
     results = main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=emissions_data, time_variable=time_variable,hierarchical=hierarchical)
 
@@ -115,9 +128,6 @@ for combination_dict in combination_dict_list:
     plot_output.plot_multiplicative_timeseries(data_title, extra_identifier,structure_variables_list=structure_variables_list,activity_variable=activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=emissions_divisia, time_variable='Year', graph_title=graph_title, residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=font_size,AUTO_OPEN=AUTO_OPEN, hierarchical=hierarchical)
 
 #%%
-
-
-# #%%
 #ANALYSIS OF THE INPUT DATA
 # # compare total energy in each of the data frames 
 # all_data = pd.read_csv('input_data/tranport_8th/activity_efficiency_energy_road_stocks.csv')

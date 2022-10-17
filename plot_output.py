@@ -74,7 +74,6 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
 
         #remove activity and total energy/emissions data from the dataset
         lmdi_output_multiplicative.drop('Total_{}'.format(activity_variable), axis=1, inplace=True)
-        lmdi_output_multiplicative.drop('Total {}'.format(energy_variable), axis=1, inplace=True)
         lmdi_output_multiplicative.drop('Total {}'.format(emissions_variable), axis=1, inplace=True)
 
         #rename the energy intensity column to residual_variable1
@@ -237,8 +236,6 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
 
         #remove activity data from the dataset
         lmdi_output_additive.drop('Total_{}'.format(activity_variable), axis=1, inplace=True)
-        #remove total energy data from the dataset
-        lmdi_output_additive.drop('Total {}'.format(energy_variable), axis=1, inplace=True)
 
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '')
@@ -247,6 +244,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #use the latest year, and the energy value for the first year
         beginning_year = lmdi_output_additive.Year.min()
         final_year = lmdi_output_additive.Year.max()
+        
         add_plot_first_year_emissions = lmdi_output_additive[lmdi_output_additive[time_variable] == beginning_year]['Total {}'.format(emissions_variable)].values[0]
         add_plot = lmdi_output_additive[lmdi_output_additive[time_variable] == final_year]
 
@@ -299,6 +297,6 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
     elif emissions_divisia == False and hierarchical == True:
-        print('Please note that the hierarchical LMDI does not currently support waterfall plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
+        print('Please note that the hierarchical LMDI method only produces a multiplicative output. However the output can be timesed by the absolute energy use to      does not currently support  plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
 ##%%
 
