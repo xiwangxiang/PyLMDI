@@ -21,6 +21,8 @@ There is the capcaity to create graphs from the outputs using plotly and the fun
 
 ## About the method
 Unfortunately I cannot directly give you the paper for which the method is based on. In the documentation are some screenshots of the formulae as created by me. The names of the papers are:
-Multilevel index decomposition analysis: Approaches and application (X.Y.Xu, B.W.Ang)
-LMDI decomposition approach: A guide for implementation (X.Y.Xu, B.W.Ang)
+ - Multilevel index decomposition analysis: Approaches and application (X.Y.Xu, B.W.Ang)
+ - LMDI decomposition approach: A guide for implementation (X.Y.Xu, B.W.Ang)
 
+## Quick notes
+Please note that the hierarchical method in LMDI_functions.py doesn't work for more than 2 structural variables. I plan to fix this but for now I don't have enough time. 
