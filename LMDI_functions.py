@@ -684,6 +684,8 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #for ease of use we didnt remove the intensity drivers for all structural variables except the last one. Now we will remove them.
     for structure_variable in structure_variables_list[1:-1]:
         drivers_df = drivers_df.drop(['{} intensity effect'.format(structure_variable)], axis=1) 
+    #and then move the last one to one from the end of the df by popping it then inserting it
+    drivers_df.insert(len(drivers_df.columns)-1, '{} intensity effect'.format(structure_variables_list[-1]), drivers_df.pop('{} intensity effect'.format(structure_variables_list[-1])))
 
     #check that the product of drivers in each year is equal to the percent change in energy
     drivers_list = drivers_df.columns.tolist()

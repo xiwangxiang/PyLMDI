@@ -105,38 +105,40 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
     
     elif emissions_divisia == False and hierarchical == True:
-        #for hiierarchical we jsut have to deal having an intensity effect for each structure variable rather than one with the name of the residual variable the user sets
-        
+                
         #get data
         lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier))
 
-        # #rename the energy intensity column to residual_variable1
-        # lmdi_output_multiplicative.rename(columns={'{} intensity'.format(energy_variable):residual_variable1}, inplace=True)
-        
+        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
+        lmdi_output_multiplicative.columns = ['Year', activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+
+        #create list of driver names in the order we want them to appear in the graph
+        driver_list = [activity_variable] + structure_variables_list + [residual_variable1]
+
         #need to make the data in long format so we have a driver column instead fo a column for each driver:
         mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
 
-        #create category based on whether data is driver or change in energy use
-        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Percent change in {}'.format(energy_variable) else 'Driver')
-        #set title
+        #create category based on whether data is driver or change in energy use. because we dont want it to show in the graph we will just make driver a double space, and the change in enegry a singel space
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Percent change in {}'.format(energy_variable) else ' ')
 
+        #set title
         if graph_title == '':
             title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
         else:
             title = graph_title + ' - Multiplicative LMDI'
 
         #plot
-        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title)#, category_orders={"Line type":['Percent change in {}'.format(energy_variable), 'Driver'],"Driver":['Percent change in {}'.format(energy_variable), 'Activity']+structure_variables_list+[residual_variable1]})#,
+        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type',  category_orders={"Line type":['', ' '],"Driver":['Percent change in {}'.format(energy_variable)]+driver_list},title=title)#,
 
         fig.update_layout(
             font=dict(
                 size=font_size
-            )
-        )
+            ),legend_title_text='Line/Driver')
+        #set name of y axis to 'Proportional effect on energy use'
+        fig.update_yaxes(title_text='Proportional effect on energy use')
 
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html', auto_open=AUTO_OPEN)
         fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
-
 
 
     

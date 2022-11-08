@@ -138,4 +138,18 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         
         hierarchical_multiplicative_output.to_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier), index=False)
 
+    # elif emissions_divisia==True and hierarchical==True:
+    #     #run hierarchical fully from a separate script in LMDI_functions.py
+    #     print('Running hierarchical LMDI for emissions.')
+    #     #check that structure_variables_list length is > 1, if it is not, tell the user to use other method
+    #     if len(structure_variables_list) < 2:
+    #         print('You need to have more than one structure variable to run hierarchical LMDI. Please use the other method.')
+    #         return None
+    #     if len(structure_variables_list) > 2:
+    #         print("Please note that the hierarchical method in LMDI_functions.py doesn't work for more than 2 structural variables. I plan to fix this but for now I don't have enough time.")
+    #         return None
+            
+    #     hierarchical_multiplicative_output = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier)
+        
+    #     hierarchical_multiplicative_output.to_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier), index=False)
 #%%
