@@ -245,12 +245,478 @@ def log_mean_func(energy_df, energy_variable):
 ##########################################################################################################################################################
 
 
-def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier):
-    #This is the function for lmdi hierarchical multiple structural effects.
-    #this changes the formula by making it so that there is an intensity effect for each structural driver and the structural driver for subsequent structural drivers is calculated by also calculating an extra log mean value. The exact formula is complicated. I have put it as a screenshot in the documentation folder.
-    #we will try something a bit different to how the other code in this repo works. we will do all the process in one go, except for relying on the log mean function. So this will act like the main function and lmdi_functions in one. 
+# def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier):
+#     #This is the function for lmdi hierarchical multiple structural effects.
+#     #this changes the formula by making it so that there is an intensity effect for each structural driver and the structural driver for subsequent structural drivers is calculated by also calculating an extra log mean value. The exact formula is complicated. I have put it as a screenshot in the documentation folder.
+#     #we will try something a bit different to how the other code in this repo works. we will do all the process in one go, except for relying on the log mean function. So this will act like the main function and lmdi_functions in one. 
 
-    #the process will be centred around one big_df which we will dip in and out of for variables. We will also have a list of the different structural drivers which we will loop through since there are a lot of different combinations of sectoral calcualtions that need to be done.
+#     #the process will be centred around one big_df which we will dip in and out of for variables. We will also have a list of the different structural drivers which we will loop through since there are a lot of different combinations of sectoral calcualtions that need to be done.
+
+#     #we will also use a numbering system in case it is useful to reference where soime variables were clacualted or something.
+
+#     # 1:
+#     #In this section we calcualte and sum for:
+#     #Eijk, Eij, Ei, E : where E is energy and ijk are the sectors in the structural drivers list. 
+#     #Aijk, Aij, Ai, A : where A is activity
+#     # intensity for each level of the structural drivers (i.e. Eijk/Aijk, Eij/Aij, Ei/Ai, E/A)
+#     #ln(intensity_other_years/intensity_base_year) for each level of the structural drivers
+#     #Aij/Ai, Ai/A, Aijl/Aij : where A is activity. This is the structural share.,
+#     #Eij/Ai, Eijk/Aij : where E is energy and A is activity. This is what ive called the intersectoral structural intensity. Wer will calculate a log mean form this in 3, which will also be used to calculate intensity_log_mean_ratio_ in 3 too.
+
+#     #so treating the order of structure_variables_list as the hierarchical order:
+#     #calc total activity and energy for each year
+#     base_year = energy_data[time_variable].min()
+#     #check base year is the same in both dataframes
+#     assert base_year == activity_data[time_variable].min()
+
+#     big_df = pd.merge(activity_data, energy_data, on=[time_variable]+structure_variables_list)
+#     big_df = pd.merge(big_df, activity_data.groupby([time_variable])[activity_variable].sum(), on=[time_variable], suffixes=('', '_total'))
+#     big_df = pd.merge(big_df, energy_data.groupby([time_variable])[energy_variable].sum(), on=[time_variable], suffixes=('', '_total'))
+
+#     hierarchy_list = []
+#     for structure_variable in structure_variables_list:
+#         hierarchy_list.append(structure_variable)
+
+#         energy_sum = energy_data.groupby([time_variable]+hierarchy_list)[energy_variable].sum().reset_index()
+#         activity_sum = activity_data.groupby([time_variable]+hierarchy_list)[activity_variable].sum().reset_index()
+#         prev_activity_sum = activity_data.groupby([time_variable]+hierarchy_list[:-1])[activity_variable].sum().reset_index()
+
+#         intensity = pd.merge(energy_sum, activity_sum, on=[time_variable]+hierarchy_list)
+#         intensity = pd.merge(intensity, prev_activity_sum, on=[time_variable]+hierarchy_list[:-1], suffixes=('', '_prev'))
+#         intensity['intensity_'+structure_variable] = intensity[energy_variable]/intensity[activity_variable]
+
+#         if len(hierarchy_list) > 1:
+#             #intersectoral intensity is only calculated for the second and subsequent levels of hierarchy's structural driver
+#             # So for example, if we have ['Vehicle Type', 'Drive'], then we have calculated this value for Drive, but not for Vehicle Type. 
+#             intensity['intersectoral_intensity_'+structure_variable] = intensity[energy_variable]/intensity[activity_variable+'_prev']
+
+#         intensity = intensity.drop(columns=[activity_variable, energy_variable, activity_variable+'_prev'])#note that its important we still keep regular intensity values since they are useful later.
+
+#         big_df = pd.merge(big_df, intensity, on=[time_variable]+hierarchy_list, how='left')
+#         ##############
+
+#         #while here we can calculate ln(intensity_other_years/intensity_base_year) for each structure variable
+#         #first create a df which only has the intensity, time variable and hierarchy list
+#         intensity = intensity[[time_variable, 'intensity_'+structure_variable]+hierarchy_list]
+#         # separate the base year and other years
+#         intensity_base_year = intensity[intensity[time_variable]==base_year].drop(columns=[time_variable])
+#         intensity_other_years = intensity[intensity[time_variable]!=base_year]
+#         #merge the two together
+#         intensity_log = pd.merge(intensity_other_years, intensity_base_year, on=hierarchy_list, suffixes=('', '_base_year'))
+#         #calc the log
+#         intensity_log['log_intensity_{}'.format(structure_variable)] = np.log(intensity_log['intensity_{}'.format(structure_variable)]/intensity_log['intensity_{}_base_year'.format(structure_variable)])
+#         #drop cols
+#         intensity_log = intensity_log.drop(columns=['intensity_{}'.format(structure_variable), 'intensity_{}_base_year'.format(structure_variable)])
+
+#         big_df = pd.merge(big_df, intensity_log, on=[time_variable]+hierarchy_list, how='left')
+#         ##############
+
+#         structural_share = pd.merge(activity_sum, prev_activity_sum, on=[time_variable]+hierarchy_list[:-1], suffixes=('', '_prev'))
+#         structural_share['structural_share_'+structure_variable] = structural_share[activity_variable]/structural_share[activity_variable+'_prev']
+#         structural_share = structural_share.drop(columns=[activity_variable, activity_variable+'_prev'])
+
+#         #while here we can still calculate ln(structural_share_other_years/structural_share_base_year) for each structure variable
+#         #first separate the base year and other years
+#         structural_share_base_year = structural_share[structural_share[time_variable]==base_year].drop(columns=[time_variable])
+#         structural_share_other_years = structural_share[structural_share[time_variable]!=base_year]
+#         #merge the two together
+#         structural_share_log = pd.merge(structural_share_other_years, structural_share_base_year, on=hierarchy_list, suffixes=('', '_base_year'))
+#         #calc the log
+#         structural_share_log['log_structural_share_{}'.format(structure_variable)] = np.log(structural_share_log['structural_share_{}'.format(structure_variable)]/structural_share_log['structural_share_{}_base_year'.format(structure_variable)])
+#         #drop cols
+#         structural_share_log = structural_share_log.drop(columns=['structural_share_{}'.format(structure_variable), 'structural_share_{}_base_year'.format(structure_variable)])
+
+#         big_df = pd.merge(big_df, structural_share_log, on=[time_variable]+hierarchy_list, how='left')
+
+#         ##############
+
+    
+#     ########################################
+#     #2
+#     #ln(At/A0) : which is used in claculating the activity driver
+
+#     #get data
+#     activity_log = activity_data.groupby([time_variable])[activity_variable].sum().reset_index()
+#     #separate the base year and other years
+#     activity_base_year = activity_log[activity_log[time_variable]==base_year]
+#     activity_other_years = activity_log[activity_log[time_variable]!=base_year]
+#     #create a col in other years which is just the data for base year
+#     activity_log = activity_other_years.copy()
+#     activity_log['{}_base_year'.format(activity_variable)] = activity_base_year[activity_variable].values[0]
+#     #calc the log
+#     activity_log['log_activity'] = np.log(activity_log[activity_variable]/activity_log['{}_base_year'.format(activity_variable)])
+#     #drop cols
+#     activity_log = activity_log.drop(columns=[activity_variable, activity_variable+'_base_year'])
+#     #join to big df
+#     big_df = pd.merge(big_df, activity_log, on=[time_variable], how='left')
+
+    
+
+#     ########################################
+#     #3.
+#     #L(EijT/AiT, Eij0/Ai0)
+#     #L(EiT/AiT, Ei0/Ai0)
+#     #L(EijT/AiT, Eij0/Ai0) / L(EiT/AiT, Ei0/Ai0) : which is the division of the two above
+#     big_df_2 = big_df.copy()
+#     #now is a tricky part. We will calculate a log mean value using the intersectoral intensity which is only calculated for the second and subsequent levels of hierarchy's structural driver. So for example, if we have ['Vehicle Type', 'Drive'], then we have calculated this value for Drive, but not for Vehicle Type. If there were extra sectors, the pattern would continue.
+#     #the formula for this value for the second level of hierarchy would be: L(EijT/AiT, Eij0/Ai0) / L(EiT/AiT, Ei0/Ai0) where T is the time variable after the base year, 0 is the base year. i is Vehicle type, j is Drive.
+
+#     #Calculate top value L(EijT/AiT, Eij0/Ai0)
+#     hierarchy_list = [structure_variables_list[0]]
+#     for structure_variable in structure_variables_list[1:]:
+#         hierarchy_list.append(structure_variable)
+
+#         calc_df = big_df_2[[time_variable, 'intersectoral_intensity_'+structure_variable]+hierarchy_list]
+
+#         #remove any duplicates in the df since we are reducing the number of cateogircal variables
+#         calc_df = calc_df.drop_duplicates()
+
+#         #sep base year and other years
+#         base_year_df = calc_df[calc_df[time_variable] == base_year].drop(columns=[time_variable])
+#         other_years_df = calc_df[calc_df[time_variable] != base_year]
+#         calc_df = pd.merge(other_years_df, base_year_df, on=hierarchy_list, suffixes=('', '_base_year'))
+
+#         #calc log mean
+#         calc_df = log_mean_func(calc_df, 'intersectoral_intensity_'+structure_variable)
+
+#         #name the log mean value column
+#         calc_df.rename(columns={'log_mean':'log_mean_'+structure_variable}, inplace=True)
+
+#         #keep the columns we need
+#         calc_df = calc_df[[time_variable]+hierarchy_list+['log_mean_'+structure_variable]]
+
+#         #merge the log mean value back into the big df
+#         big_df_2 = pd.merge(big_df_2, calc_df, on=[time_variable]+hierarchy_list, how='left')
+
+#     #########
+#     #calculate bottom value L(EiT/AiT, Ei0/Ai0)
+#     #NB it seems that this value is always calculated using the first level of hierarchy's structural driver. So for example, if we have ['Vehicle Type', 'Drive'], then we will always calculate this value for Vehicle Type as the only strucutral variable
+#     #Note that we can just use intensity as calculated above, since it is the same for the first level of hierarchy's structural driver.
+    
+#     structure_variable = structure_variables_list[0]
+#     intensity = big_df_2[['intensity_'+structure_variable, time_variable, structure_variable]]
+#     intensity = intensity.drop_duplicates()
+#     #separate the base year and other year data and make the base year data a col in the other year data
+#     base_year_df = intensity[intensity[time_variable] == base_year].drop(columns=[time_variable])
+#     other_years_df = intensity[intensity[time_variable] != base_year]
+#     #merge the data
+#     intensity_df_bot = pd.merge(other_years_df, base_year_df, on=[structure_variable], suffixes=('', '_base_year'))
+#     #calc log mean
+#     intensity_df_bot = log_mean_func(intensity_df_bot, 'intensity_'+structure_variable)
+#     #clean
+#     intensity_df_bot.drop(columns=['log_{}_base_year'.format('intensity_'+structure_variable), 'log_{}'.format('intensity_'+structure_variable), 'log_{}_diff'.format('intensity_'+structure_variable),'Change in {}'.format('intensity_'+structure_variable)], inplace=True)
+#     intensity_df_bot.drop(columns=['intensity_'+structure_variable, 'intensity_'+structure_variable+'_base_year'], inplace=True)
+#     intensity_df_bot.rename(columns={'log_mean':'intensity_log_mean_bot'}, inplace=True)
+
+#     ##############
+#     #merge the top and bot values and calculate the ratio between them
+#     #we will have to do this using a loop since the values in top will change according to the level of hierarchy
+#     hierarchy_list = [structure_variables_list[0]]
+#     for structure_variable in structure_variables_list[1:]:
+#         hierarchy_list.append(structure_variable)
+#         intersectoral_intensity_df = big_df_2[['log_mean_'+structure_variable, time_variable]+ hierarchy_list]
+#         intersectoral_intensity_df = intersectoral_intensity_df.drop_duplicates()
+#         intersectoral_intensity_df = pd.merge(intersectoral_intensity_df, intensity_df_bot, on=[time_variable, structure_variables_list[0]], how='left')
+#         intersectoral_intensity_df['intensity_log_mean_ratio_'+structure_variable] = intersectoral_intensity_df['log_mean_'+structure_variable] / intersectoral_intensity_df['intensity_log_mean_bot']
+
+#         #drop the columns we don't need
+#         intersectoral_intensity_df.drop(columns=['log_mean_'+structure_variable], inplace=True)#, 'intensity_log_mean_bot'
+        
+#         #merge the log mean value back into the big df
+#         big_df_2 = pd.merge(big_df_2, intersectoral_intensity_df, on=[time_variable]+hierarchy_list, how='left')
+        
+#     ########################################
+#     #3b.
+#     #this will work assuming that the strucutral variables will increase as the structural variable for teh driver does to. 
+#     #so say, for the intensity and structrual share drivers of drive, the formula is:
+#     #L(EijT/AiT, Eij0/Ai0)
+#     #L(EiT/AiT, Ei0/Ai0)
+#     #L(EijT/AiT, Eij0/Ai0) / L(EiT/AiT, Ei0/Ai0) : which is the division of the two above
+
+#     #but then if there was another structural variable, k, then the formula would be:
+#     #L(EijkT/AijT, Eijk0/Aij0)
+#     #L(EijT/AijT, Eij0/Aij0)
+#     #L(EijkT/AijT, Eijk0/Aij0) / L(EijT/AijT, Eij0/Aij0) : which is the division of the two above
+
+
+#     #So since we will skip the first strucutral variable, we will calculate a log mean value using the intersectoral intensity for the second and subsequent levels of hierarchy's structural driver.
+#     #the formula for this value for the second level of hierarchy would be: L(EijT/AiT, Eij0/Ai0) / L(EiT/AiT, Ei0/Ai0) where T is the time variable after the base year, 0 is the base year. i is Vehicle type, j is Drive.
+    
+#     #Calculate top value eg. L(EijT/AiT, Eij0/Ai0)
+#     hierarchy_list = [structure_variables_list[0]]
+#     for structure_variable in structure_variables_list[1:]:
+#         hierarchy_list.append(structure_variable)
+
+#         calc_df = big_df[[time_variable, 'intersectoral_intensity_'+structure_variable]+hierarchy_list]
+
+#         #remove any duplicates in the df since we are reducing the number of cateogircal variables
+#         calc_df = calc_df.drop_duplicates()
+
+#         #sep base year and other years
+#         base_year_df = calc_df[calc_df[time_variable] == base_year].drop(columns=[time_variable])
+#         other_years_df = calc_df[calc_df[time_variable] != base_year]
+#         calc_df = pd.merge(other_years_df, base_year_df, on=hierarchy_list, suffixes=('', '_base_year'))
+
+#         #calc log mean
+#         calc_df = log_mean_func(calc_df, 'intersectoral_intensity_'+structure_variable)
+
+#         #name the log mean value column
+#         calc_df.rename(columns={'log_mean':'log_mean_'+structure_variable}, inplace=True)
+
+#         #keep only the columns we do need
+#         calc_df = calc_df[[time_variable, 'log_mean_'+structure_variable]+hierarchy_list]
+
+#         #merge the log mean value back into the big df
+#         big_df = pd.merge(big_df, calc_df, on=[time_variable]+hierarchy_list, how='left')
+
+#     #########
+#     #calculate bottom value L(EiT/AiT, Ei0/Ai0)
+#     #Note that we can just use intensity as calculated for each structural variable earlier
+#     hierarchy_list = [structure_variables_list[0]]
+#     for structure_variable in structure_variables_list[1:]:
+#         previous_structure_variable = hierarchy_list[-1]
+#         intensity = big_df[['intensity_'+previous_structure_variable, time_variable]+ hierarchy_list]
+#         intensity = intensity.drop_duplicates()
+#         #separate the base year and other year data and make the base year data a col in the other year data
+#         base_year_df = intensity[intensity[time_variable] == base_year].drop(columns=[time_variable])
+#         other_years_df = intensity[intensity[time_variable] != base_year]
+#         #merge the data
+#         intensity_df_bot = pd.merge(other_years_df, base_year_df, on=hierarchy_list, suffixes=('', '_base_year'))
+#         #calc log mean
+#         intensity_df_bot = log_mean_func(intensity_df_bot, 'intensity_'+previous_structure_variable)
+
+#         #rename the log mean value column
+#         intensity_df_bot.rename(columns={'log_mean':'intensity_log_mean_bot_{}'.format(structure_variable)}, inplace=True)
+#         #keep only the columns we do need
+#         intensity_df_bot = intensity_df_bot[[time_variable, 'intensity_log_mean_bot_{}'.format(structure_variable)]+hierarchy_list]
+
+#         #merge the log mean value back into the big df
+#         big_df = pd.merge(big_df, intensity_df_bot, on=[time_variable]+hierarchy_list, how='left')
+
+#         hierarchy_list.append(structure_variable)#add to the hierarchy list last because we are basing intensity on the previous level of hierarchy
+
+#     ##############
+#     #merge the top and bot values and calculate the ratio between them
+#     #we will have to do this using a loop since the values in top will change according to the level of hierarchy
+#     hierarchy_list = [structure_variables_list[0]]
+#     for structure_variable in structure_variables_list[1:]:
+#         hierarchy_list.append(structure_variable)
+#         intersectoral_intensity_df = big_df[['log_mean_'+structure_variable,'intensity_log_mean_bot_{}'.format(structure_variable),  time_variable]+ hierarchy_list]
+#         intersectoral_intensity_df = intersectoral_intensity_df.drop_duplicates()
+#         # intersectoral_intensity_df = pd.merge(intersectoral_intensity_df, intensity_df_bot, on=[time_variable, structure_variables_list[0]], how='left')
+#         intersectoral_intensity_df['intensity_log_mean_ratio_'+structure_variable] = intersectoral_intensity_df['log_mean_'+structure_variable] / intersectoral_intensity_df['intensity_log_mean_bot_{}'.format(structure_variable)]
+
+#         #drop the columns we don't need
+#         intersectoral_intensity_df.drop(columns=['log_mean_'+structure_variable,'intensity_log_mean_bot_{}'.format(structure_variable)], inplace=True)
+        
+#         #merge the log mean value back into the big df
+#         big_df = pd.merge(big_df, intersectoral_intensity_df, on=[time_variable]+hierarchy_list, how='left')
+    
+#     ########################################
+#     # 4.
+#     #L(Eit,Ei0) 
+#     #L(ET,E0) 
+#     # WEIGHTING VALUE which is the ratio of the two values above
+
+#     #L(Eit,Ei0) / L(ET,E0) < NB not sure if it is always this or whether it will prgress to L(EijT,Eij0) / L(EiT,Ei0) if there were 3 levels of hierarchy
+#     #for now we will NOT assume the the formula will progress if there are more than 2 levels of hierarchy
+
+#     #TOP
+#     #grab sum for first structural variable:
+#     structure_variable = structure_variables_list[0]
+#     energy_sum = energy_data.groupby([time_variable,structure_variable])[energy_variable].sum().reset_index()
+
+#     #separate the base year and other year data and make the base year data a col in the other year data
+#     base_year_df = energy_sum[energy_sum[time_variable] == base_year].drop(columns=[time_variable])
+#     other_years_df = energy_sum[energy_sum[time_variable] != base_year]
+#     #merge the data
+#     weighting_df_top = pd.merge(other_years_df, base_year_df, on=[structure_variable], suffixes=('', '_base_year'))
+#     #calc log mean
+#     weighting_df_top = log_mean_func(weighting_df_top, energy_variable)
+#     #clean
+#     weighting_df_top.drop(columns=['log_{}_base_year'.format(energy_variable), 'log_{}'.format(energy_variable), 'log_{}_diff'.format(energy_variable),'Change in {}'.format(energy_variable)], inplace=True)
+#     weighting_df_top.rename(columns={'log_mean':'weighting_log_mean_top'}, inplace=True)
+
+#     #BOT
+#     #grab Energy by year summed for the first strucutral category and energy summed with no strucutral categorys
+#     total_energy_sum = big_df[[energy_variable + '_total', time_variable]]
+#     #remove duplicates
+#     total_energy_sum = total_energy_sum.drop_duplicates()
+#     #separate the base year and other year data and make the base year data a col in the other year data
+#     base_year_df = total_energy_sum[total_energy_sum[time_variable] == base_year]
+#     other_years_df = total_energy_sum[total_energy_sum[time_variable] != base_year]
+#     #create a df with the base year data as a column in the other year data
+#     weighting_df_bot = other_years_df.copy()
+#     weighting_df_bot[energy_variable + '_total'+'_base_year'] = base_year_df[energy_variable + '_total'].values[0]
+#     #calc log mean
+#     weighting_df_bot = log_mean_func(weighting_df_bot, energy_variable + '_total')
+#     #clean
+#     weighting_df_bot.drop(columns=['log_{}_base_year'.format(energy_variable + '_total'), 'log_{}'.format(energy_variable + '_total'), 'log_{}_diff'.format(energy_variable + '_total'),'Change in {}'.format(energy_variable + '_total')], inplace=True)
+#     weighting_df_bot.rename(columns={'log_mean':'weighting_log_mean_bot'}, inplace=True)
+
+#     ########
+#     #merge the top and bot values and claculate the weighting value
+#     weighting_df = pd.merge(weighting_df_top, weighting_df_bot, on=[time_variable])
+#     weighting_df['weighting_value'] = weighting_df['weighting_log_mean_top'] / weighting_df['weighting_log_mean_bot']
+#     #keep the columns we do need
+#     weighting_df = weighting_df[[time_variable,structure_variable, 'weighting_value']]
+#     #merge the weighting value back into the big df
+#     big_df = pd.merge(big_df, weighting_df, on=[time_variable, structure_variable])
+
+#     ########################################
+
+    
+#     #5.
+#     #PLEASE NOTE THAT WE WILL RENAME ALL DRIVERS AT THE END OF THIS SCRIPT, SO IT IS EASIER TO BUGFIX THIS DATA
+#     #Activity driver = exp( SUM( Weighting value * Value from step 2 ) )
+#     activity_driver = big_df[[time_variable, 'log_activity', 'weighting_value']]
+#     #remove duplicates
+#     activity_driver = activity_driver.drop_duplicates()
+#     #times the weighting value by the log activity
+#     activity_driver['activity_driver'] = activity_driver['log_activity'] * activity_driver['weighting_value']
+#     #sum the activity_driver by year
+#     activity_driver = activity_driver.groupby([time_variable])['activity_driver'].sum().reset_index()
+#     #calc the exponential
+#     activity_driver['activity_driver'] = np.exp(activity_driver['activity_driver'])
+    
+#     #7
+#     #first structural level structural driver = exp( SUM( Weighting value * ln(structural_share_other_years/structural_share__base_year) ) )
+#     #where structural share is for the first structural level
+#     first_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variables_list[0]), 'weighting_value']]
+#     #remove duplicates
+#     first_structural_level_structural_driver = first_structural_level_structural_driver.drop_duplicates()
+#     #times the weighting value by the log value
+#     first_structural_level_structural_driver['first_structural_level_structural_driver'] = first_structural_level_structural_driver['log_structural_share_{}'.format(structure_variables_list[0])] * first_structural_level_structural_driver['weighting_value']
+#     #sum the first_structural_level_structural_driver by year
+#     first_structural_level_structural_driver = first_structural_level_structural_driver.groupby([time_variable])['first_structural_level_structural_driver'].sum().reset_index()
+#     #calc the exponential
+#     first_structural_level_structural_driver['first_structural_level_structural_driver'] = np.exp(first_structural_level_structural_driver['first_structural_level_structural_driver'])
+
+    
+#     #8
+#     #successive structural level intensity drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(intensity_other_years/intensity_base_year) ) )
+#     #where intensity is for the successive structural levels
+#     #where intensity_log_mean_ratio is for the successive structural levels
+#     successive_structural_level_intensity_driver_dict = {}
+#     for structure_variable in structure_variables_list[1:]:
+#         structure_variable_index = structure_variables_list.index(structure_variable)
+#         #get the data
+#         successive_structural_level_intensity_driver = big_df[[time_variable, 'log_intensity_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
+#         #remove duplicates
+#         successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.drop_duplicates()
+#         #times the intensity_log_mean_ratio_ by the log value
+#         successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['log_intensity_{}'.format(structure_variable)] * successive_structural_level_intensity_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+#         #sum the successive_structural_level_intensity_driver by year and the first structural level
+#         successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+#         #times the weighting value by the log value
+#         successive_structural_level_intensity_driver = pd.merge(successive_structural_level_intensity_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+#         successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_intensity_driver['weighting_value']
+#         #sum the successive_structural_level_intensity_driver by year
+#         successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+#         #calc the exponential
+#         successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))])
+#         #add to the dictionary using index as key
+#         successive_structural_level_intensity_driver_dict[structure_variable_index]=successive_structural_level_intensity_driver
+
+    
+#     #9
+#     #successive structural level structural drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(structural_share_other_years/structural_share__base_year) ) )
+#     #where structural share is for the successive structural levels
+#     #where intensity_log_mean_ratio is for the successive structural levels
+#     successive_structural_level_structural_driver_dict = {}
+#     for structure_variable in structure_variables_list[1:]:
+#         structure_variable_index = structure_variables_list.index(structure_variable)
+#         #get the data
+#         successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
+#         #remove duplicates
+#         successive_structural_level_structural_driver = successive_structural_level_structural_driver.drop_duplicates()
+#         #times the intensity_log_mean_ratio_ by the log value
+#         successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structure_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+#         #sum the successive_structural_level_structural_driver by year and the first structural level
+#         successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+#         #times the weighting value by the log value
+#         successive_structural_level_structural_driver = pd.merge(successive_structural_level_structural_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+#         successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_structural_driver['weighting_value']
+#         #sum the successive_structural_level_structural_driver by year
+#         successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+#         #calc the exponential
+#         successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))])
+#         #rename the columns:
+#         successive_structural_level_structural_driver = successive_structural_level_structural_driver.rename(columns={'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index)): 'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))})
+#         #add to the dictionary using index as key
+#         successive_structural_level_structural_driver_dict[structure_variable_index]=successive_structural_level_structural_driver
+
+#     ######################################################
+#     #FORMATTING
+#     #GREAT GOOD WORK! 
+#     #we have now calculated all the drivers. We will rename them and put them in one dataframe with a time variable and the ratio between other eyars and base years in total energy,  then we are done!
+#     drivers_df = activity_driver.copy()
+#     drivers_df = drivers_df.merge(first_structural_level_structural_driver, on=time_variable)
+#     for structure_variable in structure_variables_list[1:]:
+#         structure_variable_index = structure_variables_list.index(structure_variable)
+#         drivers_df = drivers_df.merge(successive_structural_level_intensity_driver_dict[structure_variable_index], on=time_variable)
+#         drivers_df = drivers_df.merge(successive_structural_level_structural_driver_dict[structure_variable_index], on=time_variable)
+
+#     #now calculate the ratio between other eyars and base years in total energy
+#     pct_change = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
+#     #separate the base year and other years
+#     energy_base_year = pct_change[pct_change[time_variable]==base_year]
+#     energy_other_years = pct_change[pct_change[time_variable]!=base_year]
+#     #merge the two together
+#     pct_change = energy_other_years.copy()
+#     pct_change['energy_base_year'] = energy_base_year[energy_variable].values[0]
+#     #calc the ratio
+#     pct_change['energy_pct_change'] = pct_change[energy_variable]/pct_change['energy_base_year'] 
+
+#     #merge the drivers with the ratio
+#     drivers_df = drivers_df.merge(pct_change[[time_variable, 'energy_pct_change']], on=time_variable)
+
+#     #rename the columns
+#     drivers_df = drivers_df.rename(columns={'activity_driver': '{}'.format(activity_variable), 'first_structural_level_structural_driver': '{}'.format(structure_variables_list[0]),'energy_pct_change': 'Percent change in {}'.format(energy_variable)})
+
+#     for structure_variable in structure_variables_list[1:]:
+#         structure_variable_index = structure_variables_list.index(structure_variable)
+#         drivers_df = drivers_df.rename(columns={'successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index)): '{} intensity'.format(structure_variable), 'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index)): '{}'.format(structure_variable)})
+
+#     #add effect to the end of all names except 'Percent change in {}'.format(energy_variable) and Year
+#     drivers_df.columns = [col + ' effect' if col not in ['Percent change in {}'.format(energy_variable), time_variable] else col for col in drivers_df.columns]
+
+#     #for ease of use we didnt remove the intensity drivers for all structural variables except the last one. Now we will remove them.
+#     for structure_variable in structure_variables_list[1:-1]:
+#         drivers_df = drivers_df.drop(['{} intensity effect'.format(structure_variable)], axis=1) 
+#     #and then move the last one to one from the end of the df by popping it then inserting it
+#     drivers_df.insert(len(drivers_df.columns)-2, '{} intensity effect'.format(structure_variables_list[-1]), drivers_df.pop('{} intensity effect'.format(structure_variables_list[-1])))
+
+#     #check that the product of drivers in each year is equal to the percent change in energy
+#     drivers_list = drivers_df.columns.tolist()
+#     drivers_list.remove('Percent change in {}'.format(energy_variable))
+#     drivers_list.remove(time_variable)
+
+#     drivers_df['product'] = drivers_df[drivers_list].product(axis=1)
+#     drivers_df['difference'] = drivers_df['product'] - drivers_df['Percent change in {}'.format(energy_variable)]
+#     total_difference = drivers_df['difference'].sum().sum()
+#     if abs(total_difference) > 0.01:
+#         print('WARNING: The product of the hierarchical multiplicative drivers in each year for {} is not equal to the percent change in energy. The difference is {}'.format(extra_identifier,total_difference))
+#     #drop the product and difference columns
+#     drivers_df = drivers_df.drop(columns=['product', 'difference'])
+#     #now we are done. return drivers_df
+#     return drivers_df
+
+
+
+
+
+
+def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier):
+    
+    #This is the function for lmdi hierarchical multiple structural effects.
+
+    #There is only one intensity effect, which is for the final structural driver (the lowest on the hierarchy), but to keep things simple we will calculate the intensity effect for all structural variables and remove the ones we dont need at the end.
+    #The structural driver for each subsequent structural category down the hierarchy is calculated. The exact formula is complicated. I have put it as a screenshot in the documentation folder.
+
+    #The code for this function is quite long, this is because it is a complicated formula and since I have tried to make it as clear as possible, it is long.
+
+    #The process will be centred around one big_df which we will dip in and out of for variables. We will also have a list of the different structural drivers which we will loop through since there are a lot of different combinations of sectoral calcualtions that need to be done.
 
     #we will also use a numbering system in case it is useful to reference where soime variables were clacualted or something.
 
@@ -260,8 +726,8 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     #Aijk, Aij, Ai, A : where A is activity
     # intensity for each level of the structural drivers (i.e. Eijk/Aijk, Eij/Aij, Ei/Ai, E/A)
     #ln(intensity_other_years/intensity_base_year) for each level of the structural drivers
-    #Aij/Ai, Ai/A, Aijl/Aij : where A is activity. This is the structural share.,
-    #Eij/Ai, Eijk/Aij : where E is energy and A is activity. This is what ive called the intersectoral structural intensity. Wer will calculate a log mean form this in 3, which will also be used to calculate intensity_log_mean_ratio_ in 3 too.
+    #Aij/Ai, Ai/A, Aijl/Aij : where A is activity. This is the structural share.
+    #Intersectoral intensity: Eij/Ai, Eijk/Aij : where E is energy and A is activity. This is what ive called the intersectoral structural intensity. We will calculate a log mean from this in 3, which will also be used to calculate intensity_log_mean_ratio_ in 3 too.
 
     #so treating the order of structure_variables_list as the hierarchical order:
     #calc total activity and energy for each year
@@ -360,6 +826,7 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     big_df_2 = big_df.copy()
     #now is a tricky part. We will calculate a log mean value using the intersectoral intensity which is only calculated for the second and subsequent levels of hierarchy's structural driver. So for example, if we have ['Vehicle Type', 'Drive'], then we have calculated this value for Drive, but not for Vehicle Type. If there were extra sectors, the pattern would continue.
     #the formula for this value for the second level of hierarchy would be: L(EijT/AiT, Eij0/Ai0) / L(EiT/AiT, Ei0/Ai0) where T is the time variable after the base year, 0 is the base year. i is Vehicle type, j is Drive.
+    #?then???
 
     #Calculate top value L(EijT/AiT, Eij0/Ai0)
     hierarchy_list = [structure_variables_list[0]]
@@ -380,51 +847,99 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
         calc_df = log_mean_func(calc_df, 'intersectoral_intensity_'+structure_variable)
 
         #name the log mean value column
-        calc_df.rename(columns={'log_mean':'log_mean_'+structure_variable}, inplace=True)
+        calc_df.rename(columns={'log_mean':'intensity_log_mean_top_'+structure_variable}, inplace=True)#NOTE THIS IS CHANGED FROM 'log_mean_'+structure_variable
 
         #keep the columns we need
-        calc_df = calc_df[[time_variable]+hierarchy_list+['log_mean_'+structure_variable]]
+        calc_df = calc_df[[time_variable]+hierarchy_list+['intensity_log_mean_top_'+structure_variable]]
 
         #merge the log mean value back into the big df
         big_df_2 = pd.merge(big_df_2, calc_df, on=[time_variable]+hierarchy_list, how='left')
 
-    #########
-    #calculate bottom value L(EiT/AiT, Ei0/Ai0)
-    #NB it seems that this value is always calculated using the first level of hierarchy's structural driver. So for example, if we have ['Vehicle Type', 'Drive'], then we will always calculate this value for Vehicle Type as the only strucutral variable
-    #Note that we can just use intensity as calculated above, since it is the same for the first level of hierarchy's structural driver.
+    # #########
+    # #calculate bottom value L(EiT/AiT, Ei0/Ai0)
+    # #NB it seems that this value is always calculated using the first level of hierarchy's structural driver. So for example, if we have ['Vehicle Type', 'Drive'], then we will always calculate this value for Vehicle Type as the only strucutral variable
+    # #Note that we can just use intensity as calculated above, since it is the same for the first level of hierarchy's structural driver.
     
-    structure_variable = structure_variables_list[0]
-    intensity = big_df_2[['intensity_'+structure_variable, time_variable, structure_variable]]
-    intensity = intensity.drop_duplicates()
-    #separate the base year and other year data and make the base year data a col in the other year data
-    base_year_df = intensity[intensity[time_variable] == base_year].drop(columns=[time_variable])
-    other_years_df = intensity[intensity[time_variable] != base_year]
-    #merge the data
-    intensity_df_bot = pd.merge(other_years_df, base_year_df, on=[structure_variable], suffixes=('', '_base_year'))
-    #calc log mean
-    intensity_df_bot = log_mean_func(intensity_df_bot, 'intensity_'+structure_variable)
-    #clean
-    intensity_df_bot.drop(columns=['log_{}_base_year'.format('intensity_'+structure_variable), 'log_{}'.format('intensity_'+structure_variable), 'log_{}_diff'.format('intensity_'+structure_variable),'Change in {}'.format('intensity_'+structure_variable)], inplace=True)
-    intensity_df_bot.drop(columns=['intensity_'+structure_variable, 'intensity_'+structure_variable+'_base_year'], inplace=True)
-    intensity_df_bot.rename(columns={'log_mean':'intensity_log_mean_bot'}, inplace=True)
+    # structure_variable = structure_variables_list[0]
+    # intensity = big_df_2[['intensity_'+structure_variable, time_variable, structure_variable]]
+    # intensity = intensity.drop_duplicates()
+    # #separate the base year and other year data and make the base year data a col in the other year data
+    # base_year_df = intensity[intensity[time_variable] == base_year].drop(columns=[time_variable])
+    # other_years_df = intensity[intensity[time_variable] != base_year]
+    # #merge the data
+    # intensity_df_bot = pd.merge(other_years_df, base_year_df, on=[structure_variable], suffixes=('', '_base_year'))
+    # #calc log mean
+    # intensity_df_bot = log_mean_func(intensity_df_bot, 'intensity_'+structure_variable)
+    # #clean
+    # intensity_df_bot.drop(columns=['log_{}_base_year'.format('intensity_'+structure_variable), 'log_{}'.format('intensity_'+structure_variable), 'log_{}_diff'.format('intensity_'+structure_variable),'Change in {}'.format('intensity_'+structure_variable)], inplace=True)
+    # intensity_df_bot.drop(columns=['intensity_'+structure_variable, 'intensity_'+structure_variable+'_base_year'], inplace=True)
+    # intensity_df_bot.rename(columns={'log_mean':'intensity_log_mean_bot'}, inplace=True)
 
-    ##############
-    #merge the top and bot values and calculate the ratio between them
-    #we will have to do this using a loop since the values in top will change according to the level of hierarchy
-    hierarchy_list = [structure_variables_list[0]]
-    for structure_variable in structure_variables_list[1:]:
-        hierarchy_list.append(structure_variable)
-        intersectoral_intensity_df = big_df_2[['log_mean_'+structure_variable, time_variable]+ hierarchy_list]
-        intersectoral_intensity_df = intersectoral_intensity_df.drop_duplicates()
-        intersectoral_intensity_df = pd.merge(intersectoral_intensity_df, intensity_df_bot, on=[time_variable, structure_variables_list[0]], how='left')
-        intersectoral_intensity_df['intensity_log_mean_ratio_'+structure_variable] = intersectoral_intensity_df['log_mean_'+structure_variable] / intersectoral_intensity_df['intensity_log_mean_bot']
+    # ############# TEST
+    # #Perhaps the bottom value is calculated using the previous sector, not the first sector. We will test this.
+    
+    # #Calculate bottom value using the previous sector
+    # for structure_variable in structure_variables_list:
+    #     hierarchy_list.append(structure_variable)
 
-        #drop the columns we don't need
-        intersectoral_intensity_df.drop(columns=['log_mean_'+structure_variable], inplace=True)#, 'intensity_log_mean_bot'
+    #     #grab intensity for the previous sector
+    #     calc_df = big_df_2[[time_variable, 'intensity_'+structure_variable]+hierarchy_list]
+
+    #     #remove any duplicates in the df since we are reducing the number of cateogircal variables
+    #     calc_df = calc_df.drop_duplicates()
+
+    #     #sep base year and other years
+    #     base_year_df = calc_df[calc_df[time_variable] == base_year].drop(columns=[time_variable])
+    #     other_years_df = calc_df[calc_df[time_variable] != base_year]
+    #     calc_df = pd.merge(other_years_df, base_year_df, on=hierarchy_list, suffixes=('', '_base_year'))
+
+    #     #calc log mean
+    #     calc_df = log_mean_func(calc_df, 'intensity_'+structure_variable)
+
+    #     #name the log mean value column using the name of the previous sector
+    #     calc_df.rename(columns={'log_mean':'intensity_log_mean_bot_' + structure_variable}, inplace=True)
+
+    #     #keep the columns we need
+    #     calc_df = calc_df[[time_variable]+hierarchy_list+['intensity_log_mean_bot_' + structure_variable]]
+
+    #     #merge the log mean value back into the big df
+    #     big_df_2 = pd.merge(big_df_2, calc_df, on=[time_variable]+hierarchy_list, how='left')
+
+    # ##############
+    # #merge the top and bot values and calculate the ratio between them
+    # #we will have to do this using a loop since the values in top will change according to the level of hierarchy
+    # hierarchy_list = [structure_variables_list[0]]
+    # for structure_variable in structure_variables_list[1:]:
+    #     hierarchy_list.append(structure_variable)
+    #     intersectoral_intensity_df = big_df_2[['log_mean_'+structure_variable, time_variable]+ hierarchy_list]
+    #     intersectoral_intensity_df = intersectoral_intensity_df.drop_duplicates()
+    #     intersectoral_intensity_df = pd.merge(intersectoral_intensity_df, intensity_df_bot, on=[time_variable, structure_variables_list[0]], how='left')
+    #     intersectoral_intensity_df['intensity_log_mean_ratio_'+structure_variable] = intersectoral_intensity_df['log_mean_'+structure_variable] / intersectoral_intensity_df['intensity_log_mean_bot']
+
+    #     #drop the columns we don't need
+    #     intersectoral_intensity_df.drop(columns=['log_mean_'+structure_variable], inplace=True)#, 'intensity_log_mean_bot'
         
-        #merge the log mean value back into the big df
-        big_df_2 = pd.merge(big_df_2, intersectoral_intensity_df, on=[time_variable]+hierarchy_list, how='left')
+    #     #merge the log mean value back into the big df
+    #     big_df_2 = pd.merge(big_df_2, intersectoral_intensity_df, on=[time_variable]+hierarchy_list, how='left')
+    
+    # ##############
+    # #TEST as if we are using the previous sector
+    # #merge the top and bot values and calculate the ratio between them
+    # #we will have to do this using a loop since the values in top will change according to the level of hierarchy
+    # hierarchy_list = [structure_variables_list[0]]
+    # for structure_variable in structure_variables_list[1:]:
+    #     hierarchy_list.append(structure_variable)
+    #     previous_sector  = structure_variables_list[structure_variables_list.index(structure_variable)-1]
+    #     intersectoral_intensity_df = big_df_2[['intensity_log_mean_top_'+structure_variable,'intensity_log_mean_bot_'+previous_sector,  time_variable]+ hierarchy_list]
+    #     intersectoral_intensity_df = intersectoral_intensity_df.drop_duplicates()
+    #     intersectoral_intensity_df['intensity_log_mean_ratio_'+structure_variable] = intersectoral_intensity_df['intensity_log_mean_top_'+structure_variable] / intersectoral_intensity_df['intensity_log_mean_bot_'+previous_sector]
+
+    #     #drop the columns we don't need
+    #     intersectoral_intensity_df.drop(columns=['intensity_log_mean_top_'+structure_variable,'intensity_log_mean_bot_'+previous_sector], inplace=True)#, 'intensity_log_mean_bot'
         
+    #     #merge the log mean value back into the big df
+    #     big_df_2 = pd.merge(big_df_2, intersectoral_intensity_df, on=[time_variable]+hierarchy_list, how='left')
+           
     ########################################
     #3b.
     #this will work assuming that the strucutral variables will increase as the structural variable for teh driver does to. 
@@ -523,14 +1038,14 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
 
     #TOP
     #grab sum for first structural variable:
-    structure_variable = structure_variables_list[0]
-    energy_sum = energy_data.groupby([time_variable,structure_variable])[energy_variable].sum().reset_index()
+    first_structure_variable = structure_variables_list[0]
+    energy_sum = energy_data.groupby([time_variable,first_structure_variable])[energy_variable].sum().reset_index()
 
     #separate the base year and other year data and make the base year data a col in the other year data
     base_year_df = energy_sum[energy_sum[time_variable] == base_year].drop(columns=[time_variable])
     other_years_df = energy_sum[energy_sum[time_variable] != base_year]
     #merge the data
-    weighting_df_top = pd.merge(other_years_df, base_year_df, on=[structure_variable], suffixes=('', '_base_year'))
+    weighting_df_top = pd.merge(other_years_df, base_year_df, on=[first_structure_variable], suffixes=('', '_base_year'))
     #calc log mean
     weighting_df_top = log_mean_func(weighting_df_top, energy_variable)
     #clean
@@ -559,9 +1074,9 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     weighting_df = pd.merge(weighting_df_top, weighting_df_bot, on=[time_variable])
     weighting_df['weighting_value'] = weighting_df['weighting_log_mean_top'] / weighting_df['weighting_log_mean_bot']
     #keep the columns we do need
-    weighting_df = weighting_df[[time_variable,structure_variable, 'weighting_value']]
+    weighting_df = weighting_df[[time_variable,first_structure_variable, 'weighting_value']]
     #merge the weighting value back into the big df
-    big_df = pd.merge(big_df, weighting_df, on=[time_variable, structure_variable])
+    big_df = pd.merge(big_df, weighting_df, on=[time_variable, first_structure_variable])
 
     ########################################
 
@@ -578,75 +1093,194 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     activity_driver = activity_driver.groupby([time_variable])['activity_driver'].sum().reset_index()
     #calc the exponential
     activity_driver['activity_driver'] = np.exp(activity_driver['activity_driver'])
-    
+
+    ############################################################################################################
+
     #7
     #first structural level structural driver = exp( SUM( Weighting value * ln(structural_share_other_years/structural_share__base_year) ) )
     #where structural share is for the first structural level
-    first_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variables_list[0]), 'weighting_value']]
+    first_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(first_structure_variable), 'weighting_value']]
     #remove duplicates
     first_structural_level_structural_driver = first_structural_level_structural_driver.drop_duplicates()
     #times the weighting value by the log value
-    first_structural_level_structural_driver['first_structural_level_structural_driver'] = first_structural_level_structural_driver['log_structural_share_{}'.format(structure_variables_list[0])] * first_structural_level_structural_driver['weighting_value']
+    first_structural_level_structural_driver['first_structural_level_structural_driver'] = first_structural_level_structural_driver['log_structural_share_{}'.format(first_structure_variable)] * first_structural_level_structural_driver['weighting_value']
     #sum the first_structural_level_structural_driver by year
     first_structural_level_structural_driver = first_structural_level_structural_driver.groupby([time_variable])['first_structural_level_structural_driver'].sum().reset_index()
     #calc the exponential
     first_structural_level_structural_driver['first_structural_level_structural_driver'] = np.exp(first_structural_level_structural_driver['first_structural_level_structural_driver'])
 
-    
-    #8
-    #successive structural level intensity drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(intensity_other_years/intensity_base_year) ) )
-    #where intensity is for the successive structural levels
-    #where intensity_log_mean_ratio is for the successive structural levels
-    successive_structural_level_intensity_driver_dict = {}
-    for structure_variable in structure_variables_list[1:]:
-        structure_variable_index = structure_variables_list.index(structure_variable)
-        #get the data
-        successive_structural_level_intensity_driver = big_df[[time_variable, 'log_intensity_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
-        #remove duplicates
-        successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.drop_duplicates()
-        #times the intensity_log_mean_ratio_ by the log value
-        successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['log_intensity_{}'.format(structure_variable)] * successive_structural_level_intensity_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
-        #sum the successive_structural_level_intensity_driver by year and the first structural level
-        successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
-        #times the weighting value by the log value
-        successive_structural_level_intensity_driver = pd.merge(successive_structural_level_intensity_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
-        successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_intensity_driver['weighting_value']
-        #sum the successive_structural_level_intensity_driver by year
-        successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
-        #calc the exponential
-        successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))])
-        #add to the dictionary using index as key
-        successive_structural_level_intensity_driver_dict[structure_variable_index]=successive_structural_level_intensity_driver
+    ############################################################################################################
+    TEST = False
+    #TEST bool is currently being used to test out different ways that this part of the method could work for more than 2 structural drivers. 
+    if not TEST:
+        #8
+        #please note that in the final version of this method we actually remove the intensity drivers for all structural levels except the last. But we have to calcualte the intensity_log_mean_ratio for each structural level anyway so to keep the code simple we jsut calcualte the intensity drivers for all structural levels and remove them afterwwards
+        #successive structural level intensity drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(intensity_other_years/intensity_base_year) ) )
+        #where intensity is for the successive structural levels
+        #where intensity_log_mean_ratio is for the successive structural levels
+        successive_structural_level_intensity_driver_dict = {}
+        for structure_variable in structure_variables_list[1:]:
+            structure_variable_index = structure_variables_list.index(structure_variable)
+            #get the data
+            successive_structural_level_intensity_driver = big_df[[time_variable, 'log_intensity_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
+            #remove duplicates
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.drop_duplicates()
+            #times the intensity_log_mean_ratio_ by the log value
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['log_intensity_{}'.format(structure_variable)] * successive_structural_level_intensity_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+            #sum the successive_structural_level_intensity_driver by year and the first structural level
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #times the weighting value by the log value
+            successive_structural_level_intensity_driver = pd.merge(successive_structural_level_intensity_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_intensity_driver['weighting_value']
+            #sum the successive_structural_level_intensity_driver by year
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #calc the exponential
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))])
+            #add to the dictionary using index as key
+            successive_structural_level_intensity_driver_dict[structure_variable_index]=successive_structural_level_intensity_driver
 
-    
+    if TEST:
+        #8  TEST
+        #please note that in the final version of this method we actually remove the intensity drivers for all structural levels except the last. But we have to calcualte the intensity_log_mean_ratio for each structural level anyway so to keep the code simple we jsut calcualte the intensity drivers for all structural levels and remove them afterwwards
+
+        #successive structural level intensity drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(intensity_other_years/intensity_base_year) ) )
+        #where intensity is for the successive structural levels
+        #where intensity_log_mean_ratio is for the successive structural levels
+        successive_structural_level_intensity_driver_dict = {}
+        hierarchy_list = [structure_variables_list[0]]
+        for structure_variable in structure_variables_list[1:]:
+            structure_variable_index = structure_variables_list.index(structure_variable)
+
+            #get the data for this level
+            successive_structural_level_intensity_driver = big_df[[time_variable, 'log_intensity_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable),structure_variable]+hierarchy_list]
+
+            #remove duplicates
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.drop_duplicates()
+
+            ##now do calculations:
+
+            #times the intensity_log_mean_ratio_ by the log value for the current level (current level = structure_variable)
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['log_intensity_{}'.format(structure_variable)] * successive_structural_level_intensity_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+            #sum the successive_structural_level_intensity_driver by year and all the structural levels
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable,structure_variable]+hierarchy_list)['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+
+            #NOW do this for each structural vairable in the hierarchy list (except the first one), but going backwards (so the last one is the first one)):
+            #times the variable successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index) by the previous structural vairables intensity_log_mean_ratio_ and sum for each year and all the structural levels up to that one. this will be set as the new value for the successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index) for the next iteration
+
+            mini_hierarchy_list = hierarchy_list
+            for hierarchy_variable in hierarchy_list[::-1]:#going backwards from the higest level to the lowest:
+                if hierarchy_variable != hierarchy_list[0]:#ignore the first one because the calc for that is different. we do it later
+                    
+                    successive_structural_level_intensity_driver = pd.merge(successive_structural_level_intensity_driver, big_df[[time_variable, 'intensity_log_mean_ratio_{}'.format(hierarchy_variable)] + mini_hierarchy_list], on=[time_variable]+mini_hierarchy_list)
+
+                    #times the intensity_log_mean_ratio_ by the log value for the current level
+                    successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_intensity_driver['intensity_log_mean_ratio_{}'.format(hierarchy_variable)]
+
+                    #sum the successive_structural_level_intensity_driver by year and all the structural levels up to and including this one (which is equivaelnt to [hierarchy_variable]+ hierarchy_list)
+                    successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable]+ hierarchy_list)['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+
+                    #remove the hierarchy variable from the mini_hierarchy_list
+                    mini_hierarchy_list.remove(hierarchy_variable)
+
+            #times the weighting value for the first_structure_variable by the nnewly calculated value
+            successive_structural_level_intensity_driver = pd.merge(successive_structural_level_intensity_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_intensity_driver['weighting_value']
+            #sum the successive_structural_level_intensity_driver by year
+            successive_structural_level_intensity_driver = successive_structural_level_intensity_driver.groupby([time_variable])['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #calc the exponential
+            successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_intensity_driver['successive_structural_level_intensity_driver_{}'.format(str(structure_variable_index))])
+            #add to the dictionary using index as key
+            successive_structural_level_intensity_driver_dict[structure_variable_index]=successive_structural_level_intensity_driver
+
+            #add structure variable to the hierarchy list
+            hierarchy_list.append(structure_variable)
+
+    ############################################################################################################
     #9
-    #successive structural level structural drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(structural_share_other_years/structural_share__base_year) ) )
-    #where structural share is for the successive structural levels
-    #where intensity_log_mean_ratio is for the successive structural levels
-    successive_structural_level_structural_driver_dict = {}
-    for structure_variable in structure_variables_list[1:]:
-        structure_variable_index = structure_variables_list.index(structure_variable)
-        #get the data
-        successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
-        #remove duplicates
-        successive_structural_level_structural_driver = successive_structural_level_structural_driver.drop_duplicates()
-        #times the intensity_log_mean_ratio_ by the log value
-        successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structure_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
-        #sum the successive_structural_level_structural_driver by year and the first structural level
-        successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
-        #times the weighting value by the log value
-        successive_structural_level_structural_driver = pd.merge(successive_structural_level_structural_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
-        successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_structural_driver['weighting_value']
-        #sum the successive_structural_level_structural_driver by year
-        successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
-        #calc the exponential
-        successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))])
-        #rename the columns:
-        successive_structural_level_structural_driver = successive_structural_level_structural_driver.rename(columns={'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index)): 'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))})
-        #add to the dictionary using index as key
-        successive_structural_level_structural_driver_dict[structure_variable_index]=successive_structural_level_structural_driver
+    if TEST:
+        #successive structural level structural drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(structural_share_other_years/structural_share__base_year) ) )
+        #where structural share is for the successive structural levels
+        #where intensity_log_mean_ratio is for the successive structural levels
+        successive_structural_level_structural_driver_dict = {}
+        hierarchy_list = [structure_variables_list[0]]
+        for structure_variable in structure_variables_list[1:]:
+            structure_variable_index = structure_variables_list.index(structure_variable)
+
+            #get the data for this level
+            successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable),structure_variable]+hierarchy_list]
+
+            #remove duplicates
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.drop_duplicates()
+            
+            ##now do calculations:
+            
+            #times the intensity_log_mean_ratio_ by the log value for the current level
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structure_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+            #sum the successive_structural_level_intensity_driver by year and all the structural levels
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable,structure_variable]+hierarchy_list)['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+
+            #NOW do this for each structural vairable in the hierarchy list (except the first one), but going backwards (so the last one is the first one)):
+            #times the variable successive_structural_level_structural_driver_{}'.format(str(structure_variable_index) by the previous structural vairables intensity_log_mean_ratio_ and sum for each year and all the structural levels up to that one. this will be set as the new value for the successive_structural_level_structural_driver_{}'.format(str(structure_variable_index) for the next iteration
+
+            mini_hierarchy_list = hierarchy_list
+            for hierarchy_variable in hierarchy_list[::-1]:#going backwards from the higest level to the lowest:
+                if hierarchy_variable != hierarchy_list[0]:#ignore the first one because the calc for that is different. we do it later
+                    
+                    successive_structural_level_structural_driver = pd.merge(successive_structural_level_structural_driver, big_df[[time_variable, 'intensity_log_mean_ratio_{}'.format(hierarchy_variable)] + mini_hierarchy_list], on=[time_variable]+mini_hierarchy_list)
+
+                    #times the intensity_log_mean_ratio_ by the log value for the current level
+                    successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(hierarchy_variable)]
+
+                    #sum the successive_structural_level_structural_driver by year and all the structural levels up to and including this one
+                    successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable]+ hierarchy_list)['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+
+                    #remove the hierarchy variable from the mini_hierarchy_list
+                    mini_hierarchy_list.remove(hierarchy_variable)
+
+            #times the weighting value for the first_structure_variable by the nnewly calculated value
+            successive_structural_level_structural_driver = pd.merge(successive_structural_level_structural_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_structural_driver['weighting_value']
+            #sum the successive_structural_level_structural_driver by year
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #calc the exponential
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))])
+            #add to the dictionary using index as key
+            successive_structural_level_structural_driver_dict[structure_variable_index]=successive_structural_level_structural_driver
+
+            #add structure variable to the hierarchy list
+            hierarchy_list.append(structure_variable)
+
+    if not TEST:
+        #successive structural level structural drivers = exp( SUM( Weighting value * SUM( intensity_log_mean_ratio * ln(structural_share_other_years/structural_share__base_year) ) )
+        #where structural share is for the successive structural levels
+        #where intensity_log_mean_ratio is for the successive structural levels
+        successive_structural_level_structural_driver_dict = {}
+        for structure_variable in structure_variables_list[1:]:
+            structure_variable_index = structure_variables_list.index(structure_variable)
+            #get the data
+            successive_structural_level_structural_driver = big_df[[time_variable, 'log_structural_share_{}'.format(structure_variable), 'intensity_log_mean_ratio_{}'.format(structure_variable), structure_variables_list[0]]]
+            #remove duplicates
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.drop_duplicates()
+            #times the intensity_log_mean_ratio_ by the log value
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['log_structural_share_{}'.format(structure_variable)] * successive_structural_level_structural_driver['intensity_log_mean_ratio_{}'.format(structure_variable)]
+            #sum the successive_structural_level_structural_driver by year and the first structural level
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable, structure_variables_list[0]])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #times the weighting value by the log value
+            successive_structural_level_structural_driver = pd.merge(successive_structural_level_structural_driver, weighting_df, on=[time_variable, structure_variables_list[0]])
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_structural_driver['weighting_value']
+            #sum the successive_structural_level_structural_driver by year
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.groupby([time_variable])['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))].sum().reset_index()
+            #calc the exponential
+            successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_structural_driver['successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))])
+            #rename the columns:
+            successive_structural_level_structural_driver = successive_structural_level_structural_driver.rename(columns={'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index)): 'successive_structural_level_structural_driver_{}'.format(str(structure_variable_index))})
+            #add to the dictionary using index as key
+            successive_structural_level_structural_driver_dict[structure_variable_index]=successive_structural_level_structural_driver
+
+
 
     ######################################################
+    #10
     #FORMATTING
     #GREAT GOOD WORK! 
     #we have now calculated all the drivers. We will rename them and put them in one dataframe with a time variable and the ratio between other eyars and base years in total energy,  then we are done!
@@ -701,5 +1335,3 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     drivers_df = drivers_df.drop(columns=['product', 'difference'])
     #now we are done. return drivers_df
     return drivers_df
-
-

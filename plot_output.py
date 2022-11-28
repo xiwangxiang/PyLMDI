@@ -3,7 +3,6 @@
 #if things get out of hand then suggest making a new function in a new file
 #%%
 
-from enum import auto
 import pandas as pd
 import numpy as np
 

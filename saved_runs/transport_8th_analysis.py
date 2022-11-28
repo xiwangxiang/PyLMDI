@@ -24,7 +24,7 @@ import LMDI_functions
 ###########################################################################
 
 #we will create a script which will loop through the different combinations of data we have and run the LMDI model on them and plot them
-all_data = pd.read_csv('input_data/tranport_8th/activity_efficiency_energy_road_stocks.csv')
+# all_data = pd.read_csv('input_data/tranport_8th/activity_efficiency_energy_road_stocks.csv')
 transport_8th_emissions = pd.read_csv('input_data/tranport_8th/transport_8th_emissions.csv')
 #filter out data after 2050
 all_data = transport_8th_emissions[transport_8th_emissions['Year']<=2050]
@@ -81,9 +81,9 @@ combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'fre
 #%%
 #create loop to run through the combinations
 for combination_dict in combination_dict_list:
-    if combination_dict['hierarchical'] == False:
-        #next
-        continue
+    # if combination_dict['hierarchical'] == False:
+    #     #next
+    #     continue
     print('\n\nRunning ', combination_dict['extra_identifier'])
     #create a dataframe for each combination
     data = all_data.copy()

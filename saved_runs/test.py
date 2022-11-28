@@ -14,9 +14,9 @@ import plot_output
 import data_creation_functions
 import LMDI_functions
 import re
-
+AUTO_OPEN = True
 #%%
-#load data in
+#TEST SIMPLE FUNCTIONALITY
 
 ###########################################################################
 #load in the data
@@ -24,7 +24,7 @@ activity_data  = pd.read_csv('input_data/test_data_activity_PASSENGER_REF_MODE_D
 energy_data = pd.read_csv('input_data/test_data_energy_PASSENGER_REF_MODE_DRIVE_ROAD.csv')
 
 #load in function options
-combination_dict = {'scenario':'Reference', 'transport_type':'passenger', 'medium':'road', 'activity_variable':'passenger_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (Ref)', 'extra_identifier':'PASSENGER_REF_MODE_DRIVE_ROAD', 'emissions_divisia':False, 'hierarchical':False}
+combination_dict = {'scenario':'Reference', 'transport_type':'passenger', 'medium':'road', 'activity_variable':'passenger_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road passenger - Drivers of changes in energy use (Ref)', 'extra_identifier':'PASSENGER_REF_MODE_DRIVE_ROAD', 'emissions_divisia':False, 'hierarchical':True}
 
 #rename activity with variable
 activity_data = activity_data.rename(columns={'Activity':combination_dict['activity_variable']})
@@ -45,14 +45,15 @@ hierarchical = combination_dict['hierarchical']
 
 #%%
 #test out running the hierarchical function using debugging mode
-#results = main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=[], time_variable=time_variable,hierarchical=hierarchical)
+results = main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=[], time_variable=time_variable,hierarchical=hierarchical)
 
 #%%
+#TEST SIMPLE FUNCTIONALITY USING FREIGHT DATA
 energy_data = pd.read_csv('input_data/test_data_energy_FREIGHT_CN_MODE_DRIVE_ROAD.csv')
 activity_data = pd.read_csv('input_data/test_data_activity_FREIGHT_CN_MODE_DRIVE_ROAD.csv')
 
 #load in function options
-combination_dict = {'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'road', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_MODE_DRIVE_ROAD', 'emissions_divisia':False, 'hierarchical':False}
+combination_dict = {'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'road', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_MODE_DRIVE_ROAD', 'emissions_divisia':False, 'hierarchical':True}
 
 #rename activity with variable
 activity_data = activity_data.rename(columns={'Activity':combination_dict['activity_variable']})
@@ -75,31 +76,43 @@ hierarchical = combination_dict['hierarchical']
 #test out running the hierarchical function using debugging mode
 main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=[], time_variable=time_variable,hierarchical=hierarchical)
 
-
-
-
-
-
-
+###########################################################################
 
 
 #%%
-x = False
-if x:
-    #%%
-    #load data we just created to inspect it
-    results = pd.read_csv('output_data/Transport_8thPASSENGER_REF_MODE_DRIVE_ROAD_hierarchical_multiplicative_output.csv')
-    results_multi = pd.read_csv('output_data/Transport_8thPASSENGER_REF_MODE_DRIVE_ROAD_lmdi_output_multiplicative.csv')
+#TEST FOR 3+ HIERARCHICAL LEVELS
+
+# all_data = pd.read_csv('input_data/tranport_8th/activity_efficiency_energy_road_stocks.csv')
+transport_8th_emissions = pd.read_csv('input_data/tranport_8th/transport_8th_emissions.csv')
+all_data = transport_8th_emissions[transport_8th_emissions['Year']<=2050]
+combination_dict_list=[]
+combination_dict_list.append({'scenario':'Carbon Neutral', 'transport_type':'freight', 'medium':'road', 'activity_variable':'freight_tonne_km', 'structure_variables_list':['Economy', 'Vehicle Type', 'Drive'], 'graph_title':'Road freight - Drivers of changes in energy use (CN)', 'extra_identifier':'FREIGHT_CN_ECONOMY_VTYPE_DRIVE_ROAD', 'emissions_divisia':False, 'hierarchical':True, 'residual_variable1':'Residual efficiency'})
 
 
-    #%%
-    #load and test data from ang:
-    results_ang = pd.read_csv('input_data/example_data_ang_2014.csv')
-    activity_data = results_ang[['Year', 'Sector 1', 'Sector 2', 'Activity']]
-    energy_data = results_ang[['Year', 'Sector 1', 'Sector 2', 'Energy']]
-    #load in function options
-    combination_dict = {'scenario':'Reference', 'transport_type':'passenger', 'medium':'road', 'activity_variable':'passenger_km', 'structure_variables_list':['Sector 1', 'Sector 2'], 'graph_title':'ang 2014', 'extra_identifier':'TEST', 'emissions_divisia':False, 'hierarchical':True}
+#%%
+#create loop to run through the combinations
+for combination_dict in combination_dict_list:
 
+    print('\n\nRunning ', combination_dict['extra_identifier'])
+    #create a dataframe for each combination
+    data = all_data.copy()
+    #filter data by scenario
+    data = data[data['Scenario']==combination_dict['scenario']]
+    #filter data by transport type
+    data = data[data['Transport Type']==combination_dict['transport_type']]
+    #filter data by medium
+    if combination_dict['medium'] == 'everything':
+        pass
+    else:
+        data = data[data['Medium']==combination_dict['medium']]
+
+    structure_variables_list = combination_dict['structure_variables_list']
+    #sum the data
+    data = data.groupby(['Year']+structure_variables_list).sum().reset_index()
+    #Separate energy and activity data
+    energy_data = data[['Year','Energy']+structure_variables_list]
+    activity_data = data[['Year', 'Activity']+structure_variables_list]
+    emissions_data = data[['Year',  'Emissions']+structure_variables_list]
     #rename activity with variable
     activity_data = activity_data.rename(columns={'Activity':combination_dict['activity_variable']})
 
@@ -108,22 +121,28 @@ if x:
     structure_variables_list = combination_dict['structure_variables_list']
     graph_title = combination_dict['graph_title']
     extra_identifier = combination_dict['extra_identifier']
-    data_title = 'test_ang_2014'
+    data_title = 'Transport_8th'
     energy_variable = 'Energy'
     time_variable = 'Year'
     font_size=25
     y_axis_min_percent_decrease=0.1
-    residual_variable1='Energy intensity'
+    residual_variable1=combination_dict['residual_variable1']
     emissions_divisia = combination_dict['emissions_divisia']
     hierarchical = combination_dict['hierarchical']
 
-    #%%
-    #test out running the hierarchical function using debugging mode
-    main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=[], time_variable=time_variable,hierarchical=hierarchical)
+    #run LMDI
+    results = main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=emissions_data, time_variable=time_variable,hierarchical=hierarchical)
 
-    # big_df, big_df_2 = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable)
-    #%%
-    results_ang = pd.read_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier))
-    print(results_ang)
-    #Looks like something is wrong with the second structural effect.
-    # %%
+    #if tehre is a new_structure_variables_list, we will use that when plotting
+    if 'new_structure_variables_list' in combination_dict:
+        structure_variables_list = combination_dict['new_structure_variables_list']
+        
+    #plot LMDI
+    plot_output.plot_additive_waterfall(data_title, extra_identifier, structure_variables_list=structure_variables_list,activity_variable=activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=emissions_divisia, time_variable='Year', graph_title=graph_title, residual_variable1=residual_variable1, residual_variable2='Emissions intensity', font_size=font_size, y_axis_min_percent_decrease=y_axis_min_percent_decrease,AUTO_OPEN=AUTO_OPEN, hierarchical=hierarchical)
+
+    plot_output.plot_multiplicative_timeseries(data_title, extra_identifier,structure_variables_list=structure_variables_list,activity_variable=activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=emissions_divisia, time_variable='Year', graph_title=graph_title, residual_variable1=residual_variable1, residual_variable2='Emissions intensity', font_size=font_size,AUTO_OPEN=AUTO_OPEN, hierarchical=hierarchical)
+
+        
+        
+
+# %%
