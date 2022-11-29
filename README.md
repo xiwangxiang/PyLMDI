@@ -25,4 +25,5 @@ Unfortunately I cannot directly give you the paper for which the method is based
  - LMDI decomposition approach: A guide for implementation (X.Y.Xu, B.W.Ang)
 
 ## Quick notes
-Please note that the hierarchical method in LMDI_functions.py doesn't work for more than 2 structural variables. I plan to fix this but for now I don't have enough time. 
+Please note that the hierarchical method in LMDI_functions.py doesn't work for more than 2 structural variables this is because i copied the method from one of Ang's papers but I cannot work out how to extend the formula to work for three structural variables. If you do know, even if you don't know how to code it up, i would love to learn how. 
+It is unlikely there are cases where analysis using 3 strucutral variables is needed anyway.
