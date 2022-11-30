@@ -61,7 +61,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         )
 
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html', auto_open=AUTO_OPEN)
-        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
 
     elif emissions_divisia == True and hierarchical == False:
         
@@ -101,7 +101,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
             )
         )
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html',auto_open=AUTO_OPEN)
-        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
     
     elif emissions_divisia == False and hierarchical == True:
                 
@@ -137,7 +137,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         fig.update_yaxes(title_text='Proportional effect on energy use')
 
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_timeseries.html', auto_open=AUTO_OPEN)
-        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
 
 
     
@@ -170,6 +170,9 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '')
         
+        #replace 'Energy intensity' with residual_variable1
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
+
         #format data for waterfall plot
         #use the latest year, and the energy value for the first year
         beginning_year = lmdi_output_additive.Year.min()
@@ -229,7 +232,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         )
 
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html',auto_open=AUTO_OPEN)
-        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
     elif emissions_divisia  == True and hierarchical == False:
         #this is for emissions plot:
@@ -241,6 +244,11 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '')
 
+        #replace 'Energy intensity' with residual_variable1
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
+        #replace 'Emissions intensity' with residual_variable2
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Emissions intensity', residual_variable2)
+        
         #format data for waterfall plot
         #use the latest year, and the energy value for the first year
         beginning_year = lmdi_output_additive.Year.min()
@@ -295,9 +303,83 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         )
 
         plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'additive_waterfall.html',auto_open=AUTO_OPEN)
-        fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
     elif emissions_divisia == False and hierarchical == True:
-        print('Please note that the hierarchical LMDI method only produces a multiplicative output. However the output can be timesed by the absolute energy use to      does not currently support  plots as the hierarchical plot only works for multiplicative. Please use the additive LMDI instead.')
+        print('Please note that the hierarchical LMDI method only produces a multiplicative output. So the output will be a multiplicative waterfall plot.')
+        
+        #get data
+        lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier))
+
+        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
+        lmdi_output_multiplicative.columns = ['Year', activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+
+        #filter data to only include the final year
+        lmdi_output_multiplicative = lmdi_output_multiplicative[lmdi_output_multiplicative[time_variable] == lmdi_output_multiplicative[time_variable].max()]
+        # #create list of driver names in the order we want them to appear in the graph
+        # driver_list = [activity_variable] + structure_variables_list + [residual_variable1]
+
+        # #need to make the data in long format so we have a driver column instead fo a column for each driver:
+        # mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
+
+        # #create category based on whether data is driver or change in energy use. because we dont want it to show in the graph we will just make driver a double space, and the change in enegry a singel space
+        # mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Percent change in {}'.format(energy_variable) else ' ')
+        
+        #rename to add_plot to make it easier to copy and paste code
+        add_plot = lmdi_output_multiplicative.copy()
+        #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
+        add_plot.columns = add_plot.columns.str.replace(' effect$', '')
+        
+        #create a 'relative' vlaue  in the list for each driver in the dataset. to count the number of drivers, we can use the number of structure variables + 2 (activity and residual)
+        measure_list = ['relative'] * (len(structure_variables_list) + 2) + ['total']
+
+        if graph_title == '':
+            title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
+        else:
+            title = graph_title + ' - Multiplicative LMDI'
+
+        y = [add_plot[activity_variable].iloc[0]] + add_plot[structure_variables_list].iloc[0].tolist() + [add_plot[residual_variable1].iloc[0],
+        add_plot["Percent change in {}".format(energy_variable)].iloc[0]]
+        #minus 1 from all values in the list to make them relative to 0
+        y = [i-1 for i in y]
+        x = [activity_variable] + structure_variables_list + [residual_variable1,'Percent change in {}'.format(energy_variable)]
+
+        fig = go.Figure(go.Bar(
+            orientation = "v",
+            #measure = measure_list,
+            # base = base_amount,
+
+            x = x,
+
+            textposition = "outside",
+
+            #can add text to the waterfall plot here to show the values of the drivers
+            # text = [int(add_plot_first_year_energy), 
+            # str(int(add_plot["Activity"].round(0).iloc[0])), 
+            # str(int(add_plot[structure_variable].round(0).iloc[0])),
+            # str(int(add_plot["Energy intensity"].round(0).iloc[0])), 
+            # str(int(add_plot["Energy"].round(0).iloc[0]))],
+
+            y = y,
+
+            # decreasing = {"marker":{"color":"#93C0AC"}},
+            # increasing = {"marker":{"color":"#EB9C98"}},
+            # totals = {"marker":{"color":"#11374A"}}
+            #color bars based on their x axis value. if the x axis value is 'Percent change in {}'.format(energy_variable) then make it "#11374A", otherwise if the y axis value is positive make it "#EB9C98" and if its negative make it "#93C0AC"
+            marker_color = ["#11374A" if i == 'Percent change in {}'.format(energy_variable) else "#EB9C98" if j > 0 else "#93C0AC" for i,j in zip(x,y)]            
+
+        ))
+        dotted_line_index = len(x) - 1.5
+        fig.update_layout(
+                title = title,
+                font=dict(
+                size=font_size
+            ), waterfallgap = 0.01,
+            #create dotted line between residual and percent change in energy use
+            shapes = [ dict( type = 'line', x0 = dotted_line_index, y0 = -1, x1 = dotted_line_index, y1 = 1, xref = 'x', yref = 'y', line = dict( color = 'black', width = 1, dash = 'dot' ) ) ]
+        )
+
+        plotly.offline.plot(fig, filename='./plotting_output/' + data_title + extra_identifier + 'multiplicative_waterfall.html',auto_open=AUTO_OPEN)
+        #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_waterfall.png')
 ##%%
 
