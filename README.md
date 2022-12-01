@@ -9,6 +9,13 @@ When choosing a decompostion method, the following factors should be considered:
  - The interpretation of the index must be straightforward (i.e. the results must be easy to understand). 
  - Data to calculate the different effects must be available.
 
+## About the method
+Unfortunately I cannot directly give you the paper for which the method is based on. The names of the papers are:
+ - Multilevel index decomposition analysis: Approaches and application (X.Y.Xu, B.W.Ang)
+ - LMDI decomposition approach: A guide for implementation (X.Y.Xu, B.W.Ang)
+
+If you want any help understanding the methods/code please feel free to reach out to me, they are pretty difficult to get your head around and i am keen to make sure somoene else doesn't have to struggle as much as i did!
+
 ## About this repo
 This version of PyLMDI is a fork of a github library i found but adjusted to be easier to use and understand. It is a work in progress for APERC staff but it can be used and updated by anyone.
 
@@ -17,7 +24,7 @@ It is expected that this project will remain easy to use and understand so as to
 ## Quick User Guide
 You can easily understand the use of this project by viewing the files in /saved_runs/ which make use of the library. 
 
-The inputs need to be similar to what has currently been used, but this is expected to be simple to copy. 
+The inputs need to be similar to what has currently been used, but this is expected to be simple to copy. Like below, generally you will need columns for Date, Structural variables (1 or many, see Vehicle_type and Drive which are structural variables, below), and the values for Energy and Activity (and Emissions if you want to analyse that too).  
 
 ### Example activity data structure:
 
@@ -41,13 +48,6 @@ The inputs need to be similar to what has currently been used, but this is expec
 For more info take a look at the saved_runs code and how the input data was structured and manipulated to make it work.
 
 There is the capcaity to create graphs from the outputs using plotly and the functions in plot_output.py. They are quite nice graphs but are probably quite fiddly if you aren't using them for similar analysis as I do with them. 
-
-## About the method
-Unfortunately I cannot directly give you the paper for which the method is based on. The names of the papers are:
- - Multilevel index decomposition analysis: Approaches and application (X.Y.Xu, B.W.Ang)
- - LMDI decomposition approach: A guide for implementation (X.Y.Xu, B.W.Ang)
-
-If you want any help understanding the methods please feel free to reach out to me, they are pretty difficult to get your head around and i am keen to make sure somoene else doesn't have to struggle as much as i did!
 
 ## Quick notes
 I have become aware of the paper 'The misinterpretation of structure effects of the LMDI and an alternative index decomposition' which can be access for free from here https://pubmed.ncbi.nlm.nih.gov/35518914/ which details: 'In particular, structure effects calculated with the LMDI cannot be interpreted as the sole effect of changes between energy-efficient and inefficient sectors"
