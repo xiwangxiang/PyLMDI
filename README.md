@@ -52,3 +52,14 @@ If you want any help understanding the methods please feel free to reach out to 
 ## Quick notes
 I have become aware of the paper 'The misinterpretation of structure effects of the LMDI and an alternative index decomposition' which can be access for free from here https://pubmed.ncbi.nlm.nih.gov/35518914/ which details: 'In particular, structure effects calculated with the LMDI cannot be interpreted as the sole effect of changes between energy-efficient and inefficient sectors"
  - I plan to look into how i can implement the MESE Decomposition method in this library however i haven't the time yet. 
+
+## Setup
+There are two options for environments. They depend if you want to use jupyter or just the command line to run the model. I prefer to use jupyter but i know that it takes a lot of space/set-up-time.
+
+config/env_jupyter.yml
+config/env_no_jupyter.yml
+run: conda env create --prefix ./env_jupyter --file ./config/env_jupyter.yml
+
+Then: conda activate ./env_jupyter
+
+Note that installing those libraries in the yml files will result in a few other dependencies also being installed.
