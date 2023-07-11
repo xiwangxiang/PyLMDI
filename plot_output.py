@@ -106,7 +106,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
     elif emissions_divisia == False and hierarchical == True:
                 
         #get data
-        lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder.data_title, extra_identifier))
+        lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier))
 
         #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
         lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
@@ -175,8 +175,8 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
 
         #format data for waterfall plot
         #use the latest year, and the energy value for the first year
-        beginning_year = lmdi_output_additive.Year.min()
-        final_year = lmdi_output_additive.Year.max()
+        beginning_year = lmdi_output_additive[time_variable].min()
+        final_year = lmdi_output_additive[time_variable].max()
         add_plot_first_year_energy = lmdi_output_additive[lmdi_output_additive[time_variable] == beginning_year]['Total {}'.format(energy_variable)].values[0]
         add_plot = lmdi_output_additive[lmdi_output_additive[time_variable] == final_year]
 
@@ -251,8 +251,8 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         
         #format data for waterfall plot
         #use the latest year, and the energy value for the first year
-        beginning_year = lmdi_output_additive.Year.min()
-        final_year = lmdi_output_additive.Year.max()
+        beginning_year = lmdi_output_additive[time_variable].min()
+        final_year = lmdi_output_additive[time_variable].max()
         
         add_plot_first_year_emissions = lmdi_output_additive[lmdi_output_additive[time_variable] == beginning_year]['Total {}'.format(emissions_variable)].values[0]
         add_plot = lmdi_output_additive[lmdi_output_additive[time_variable] == final_year]
