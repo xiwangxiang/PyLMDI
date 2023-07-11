@@ -7,7 +7,7 @@ import data_creation_functions
 import LMDI_functions
 import re
 #%%
-def run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable = 'Activity', emissions_variable = 'Emissions', energy_variable = 'Energy', emissions_divisia = False, emissions_data=[], time_variable='Year', hierarchical=False):
+def run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable = 'Activity', emissions_variable = 'Emissions', energy_variable = 'Energy', emissions_divisia = False, emissions_data=[], time_variable='Year', hierarchical=False,output_data_folder='output_data'):
     """This is a central function that will run the LMDI model. It will take the input data and format/adjust it using the functions in data_creation_functions.py. 
     It will then run the LMDI model and save the output. It will also plot the output.
     If you want to run the method using emissions intensity then you jsut set emissions divisia to true and include data for emissions_data"""
@@ -60,8 +60,8 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         
         ###################################
         #save data:
-        lmdi_output_additive.to_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier), index=False)
-        lmdi_output_multiplicative.to_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier), index=False)
+        lmdi_output_additive.to_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
+        lmdi_output_multiplicative.to_csv('{}/{}{}_lmdi_output_multiplicative.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
 
         print('Done {}'.format(data_title, extra_identifier))
 
@@ -118,8 +118,8 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         ##################################
 
         #save data:
-        lmdi_output_additive.to_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier), index=False)
-        lmdi_output_multiplicative.to_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier), index=False)
+        lmdi_output_additive.to_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
+        lmdi_output_multiplicative.to_csv('{}/{}{}_lmdi_output_multiplicative.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
 
         print('Done {}'.format(data_title, extra_identifier))
 
@@ -133,7 +133,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
         hierarchical_multiplicative_output = LMDI_functions.hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_variable, structure_variables_list, time_variable,extra_identifier)
 
-        hierarchical_multiplicative_output.to_csv('output_data/{}{}_hierarchical_multiplicative_output.csv'.format(data_title, extra_identifier), index=False)
+        hierarchical_multiplicative_output.to_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
     
     elif emissions_divisia==True and hierarchical==True:
         #run hierarchical fully from a separate script in LMDI_functions.py
