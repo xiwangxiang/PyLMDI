@@ -44,6 +44,14 @@ The inputs need to be similar to what has currently been used, but this is expec
 	2017	bus	cng	468.013538
 	2017	bus	d	1333.56073
 
+### Example emissions data structure (should be excluded if you aren't looking to plot emissions decomposition)
+
+	Year	Vehicle_type	Drive	emissions
+	2017	2w	bev	118.350075
+	2017	2w	g	826.808000
+	2017	bus	bev	289.587211
+	2017	bus	cng	468.013538
+	2017	bus	d	1333.56073
 
 For more info take a look at the saved_runs code and how the input data was structured and manipulated to make it work.
 
