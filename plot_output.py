@@ -109,7 +109,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder.data_title, extra_identifier))
 
         #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
-        lmdi_output_multiplicative.columns = ['Year', activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+        lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
 
         #create list of driver names in the order we want them to appear in the graph
         driver_list = [activity_variable] + structure_variables_list + [residual_variable1]
@@ -312,7 +312,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier))
 
         #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
-        lmdi_output_multiplicative.columns = ['Year', activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+        lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
 
         #filter data to only include the final year
         lmdi_output_multiplicative = lmdi_output_multiplicative[lmdi_output_multiplicative[time_variable] == lmdi_output_multiplicative[time_variable].max()]
