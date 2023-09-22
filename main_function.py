@@ -12,10 +12,10 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
     It will then run the LMDI model and save the output. It will also plot the output.
     If you want to run the method using emissions intensity then you jsut set emissions divisia to true and include data for emissions_data"""
     #first, if there are any 0's in the data replace them with a very small number. This means we dont have to deal with any issues with dividing by 0, and given the context of the data, it is unlikely that the 0's are actually 0, or even the result of replacing 0's with small numbers will have a noticeable impact on the results.
-    activity_data[activity_variable] = activity_data[activity_variable].replace(0,0.00000001)
-    energy_data[energy_variable] = energy_data[energy_variable].replace(0,0.00000001)
+    activity_data.loc[:, activity_variable] = activity_data.loc[:, activity_variable].replace(0, 0.00000001)
+    energy_data.loc[:, energy_variable] = energy_data.loc[:, energy_variable].replace(0, 0.00000001)
     if emissions_divisia==True:
-        emissions_data[emissions_variable] = emissions_data[emissions_variable].replace(0,0.00000001)
+        emissions_data.loc[:, emissions_variable] = emissions_data.loc[:, emissions_variable].replace(0, 0.00000001)
         
     #Now start the process of running the LMDI model
     if emissions_divisia == False and hierarchical == False:
