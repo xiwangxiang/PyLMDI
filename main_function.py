@@ -63,7 +63,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         lmdi_output_additive.to_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
         lmdi_output_multiplicative.to_csv('{}/{}{}_lmdi_output_multiplicative.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
 
-        print('Done {}'.format(data_title, extra_identifier))
+        # print('Done {}'.format(data_title, extra_identifier))
 
 
     ######################################################################    
@@ -121,7 +121,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         lmdi_output_additive.to_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
         lmdi_output_multiplicative.to_csv('{}/{}{}_lmdi_output_multiplicative.csv'.format(output_data_folder,data_title, extra_identifier), index=False)
 
-        print('Done {}'.format(data_title, extra_identifier))
+        # print('Done {}'.format(data_title, extra_identifier))
 
     elif emissions_divisia==False and hierarchical==True:
         #run hierarchical fully from a separate script in LMDI_functions.py
