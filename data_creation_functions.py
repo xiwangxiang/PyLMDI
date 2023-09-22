@@ -41,7 +41,7 @@ def format_structure_multiple(activity_data,structure_variables_list,activity_va
         #sum the activity for previous_structure_variables plus the structure_variable_i for each year
         activity_data_i = activity_data.groupby(previous_structure_variables + [time_variable, structure_variable_i])[activity_variable].sum().reset_index()
         #calculate the share of the total activity for each previous_structure_variables for each year, for each instance of that structural variable.
-        activity_data_i[structure_variable_i + '_share'] = activity_data_i.groupby(previous_structure_variables + [time_variable])[activity_variable].apply(lambda x: x / x.sum())
+        activity_data_i[structure_variable_i + '_share'] = activity_data_i.groupby(previous_structure_variables + [time_variable])[activity_variable].apply(lambda x: x / x.sum()).reset_index()[activity_variable]
         #drop the activity variable, as we don't need it anymore
         activity_data_i = activity_data_i.drop(activity_variable, axis=1)
 
