@@ -70,7 +70,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
     elif hierarchical == False and emissions_divisia == True:
     ######################################################################
 
-        print('Running LMDI for emissions, so incroporating the emissions intensity driver into the model')
+        # print('Running LMDI for emissions, so incroporating the emissions intensity driver into the model')
 
         ###################################
         #run data creation functions using variables names set by the user
@@ -125,7 +125,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
     elif emissions_divisia==False and hierarchical==True:
         #run hierarchical fully from a separate script in LMDI_functions.py
-        print('Running hierarchical LMDI for energy.')
+        # print('Running hierarchical LMDI for energy.')
         #check that structure_variables_list length is > 1, if it is not, tell the user to use other method
         if len(structure_variables_list) < 2:
             print('You need to have more than one structure variable to run hierarchical LMDI. Please use the other method.')
