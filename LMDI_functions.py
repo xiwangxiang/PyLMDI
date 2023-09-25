@@ -112,7 +112,8 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
     lmdi_output_multiplicative['difference'] = lmdi_output_multiplicative['product'] - lmdi_output_multiplicative['Percent change in {}'.format(energy_variable)]
     total_difference = lmdi_output_multiplicative['difference'].sum().sum()
     if abs(total_difference) > 0.01:
-        print('WARNING: The product of the multiplicative drivers for {} in each year is not equal to the percent change in energy. The difference is {}'.format(extra_identifier, total_difference))
+        breakpoint()
+        print('WARNING: The product of the multiplicative drivers for {} in each year is not equal to the percent change in energy. This seems to be a result of the input data, probably because the structure is inconsistent (i.e. certain structure variable categories are missing in certain years). The difference is {}'.format(extra_identifier, total_difference))
     #drop the product and difference columns
     lmdi_output_multiplicative = lmdi_output_multiplicative.drop(columns=['product', 'difference'])
 
@@ -210,12 +211,12 @@ def Add(driver_input_data, energy_data, drivers_list, structure_variables_list,e
     total_difference = lmdi_output_additive['difference'].sum().sum()
     #check that the total difference is less than 0.001
     if abs(total_difference) > 0.001:
-        print('WARNING: The sum of the additive effects for {} is not equal to the change in energy for one or more years. This is likely due to rounding errors. Please check the output. \nThe total difference is: {}'.format(extra_identifier, total_difference))
+        breakpoint()
+        print('WARNING: The sum of the additive effects for {} is not equal to the change in energy for one or more years. This seems to be a result of the input data, probably because the structure is inconsistent (i.e. certain structure variable categories are missing in certain years). Please check the input. \nThe total difference is: {}'.format(extra_identifier, total_difference))
     #drop the difference column
     lmdi_output_additive = lmdi_output_additive.drop(columns=['difference','sum of effects'])
 
     return lmdi_output_additive
-
 
 ##########################################################################################################################################################
 
@@ -686,7 +687,8 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     drivers_df['difference'] = drivers_df['product'] - drivers_df['Percent change in {}'.format(energy_variable)]
     total_difference = drivers_df['difference'].sum().sum()
     if abs(total_difference) > 0.01:
-        print('WARNING: The product of the hierarchical multiplicative drivers in each year for {} is not equal to the percent change in energy. The difference is {}'.format(extra_identifier,total_difference))
+        breakpoint()#this started happening in 25th september. dont know why
+        print('WARNING: The product of the hierarchical multiplicative drivers in each year for {} is not equal to the percent change in energy. The difference is {}. This seems to be a result of the input data, probably because the structure is inconsistent (i.e. certain structure variable categories are missing in certain years).'.format(extra_identifier,total_difference))
     #drop the product and difference columns
     drivers_df = drivers_df.drop(columns=['product', 'difference'])
     #now we are done. return drivers_df
