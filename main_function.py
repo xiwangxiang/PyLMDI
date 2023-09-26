@@ -42,16 +42,14 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
 
         ###################################
         #run LMDI_functions for additivie and multpiplicatuve outputs from the LMDI_functions.py file. It is the meat and sausages of this process.
-        
         lmdi_output_additive = LMDI_functions.Add(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,extra_identifier)
-
         lmdi_output_multiplicative = LMDI_functions.Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,energy_variable,time_variable,extra_identifier)
 
         ###################################
         #add energy and activity (summed per year) as a column since this is very useful for analysis
-        total_energy = energy_data.groupby(time_variable).sum().reset_index()
+        total_energy = energy_data.groupby(time_variable).sum(numeric_only=True).reset_index()
         total_energy = total_energy.rename(columns={energy_variable:'Total {}'.format(energy_variable)})
-        total_activity = activity_data.groupby(time_variable).sum().reset_index()
+        total_activity = activity_data.groupby(time_variable).sum(numeric_only=True).reset_index()
         total_activity = total_activity.rename(columns={activity_variable:'Total_{}'.format(activity_variable)})
         lmdi_output_additive = pd.merge(lmdi_output_additive,total_energy,on=[time_variable], how='left')
         lmdi_output_additive = pd.merge(lmdi_output_additive,total_activity,on=[time_variable], how='left')

@@ -69,7 +69,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         lmdi_output_multiplicative = pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
 
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
-        lmdi_output_multiplicative.columns = lmdi_output_multiplicative.columns.str.replace(' effect$', '')
+        lmdi_output_multiplicative.columns = lmdi_output_multiplicative.columns.str.replace(' effect$', '', regex=True)
 
         #remove activity and total energy/emissions data from the dataset
         lmdi_output_multiplicative.drop('Total_{}'.format(activity_variable), axis=1, inplace=True)
@@ -168,7 +168,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         lmdi_output_additive.drop('Total_{}'.format(activity_variable), axis=1, inplace=True)
 
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
-        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '')
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '', regex=True)
         
         #replace 'Energy intensity' with residual_variable1
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
@@ -242,7 +242,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         lmdi_output_additive.drop('Total_{}'.format(activity_variable), axis=1, inplace=True)
 
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
-        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '')
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '', regex=True)
 
         #replace 'Energy intensity' with residual_variable1
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
@@ -328,7 +328,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #rename to add_plot to make it easier to copy and paste code
         add_plot = lmdi_output_multiplicative.copy()
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
-        add_plot.columns = add_plot.columns.str.replace(' effect$', '')
+        add_plot.columns = add_plot.columns.str.replace(' effect$', '', regex=True)
         
         #create a 'relative' vlaue  in the list for each driver in the dataset. to count the number of drivers, we can use the number of structure variables + 2 (activity and residual)
         measure_list = ['relative'] * (len(structure_variables_list) + 2) + ['total']

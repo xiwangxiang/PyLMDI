@@ -36,8 +36,8 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
     energy_df_top = energy_df_top.drop(columns=time_variable+'_base_year')
 
     #calculate sum of energy for each year for the bottom part of the formula log(sum(energy_t)/sum(energy_base_year)
-    energy_year_t_sum = energy_year_t.groupby(time_variable).sum()
-    energy_base_year_sum = energy_base_year.groupby(time_variable).sum()
+    energy_year_t_sum = energy_year_t.groupby(time_variable).sum(numeric_only=True)
+    energy_base_year_sum = energy_base_year.groupby(time_variable).sum(numeric_only=True)
     #since energy_base_year_sum is just one value, create a column of that value for each year in energy_year_t_sum
     energy_df_bot = energy_year_t_sum
     energy_df_bot['{}_base_year'.format(energy_variable)] = energy_base_year_sum[energy_variable].values[0]
@@ -73,7 +73,7 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
         driver_df = driver_df.drop(columns=['{}_log_ratio'.format(driver)])
 
     #sum up for each year to get total effect per year
-    driver_df = driver_df.groupby(time_variable).sum()
+    driver_df = driver_df.groupby(time_variable).sum(numeric_only=True)
     #calc the exponential of each new driver value
     for driver in drivers_list:
         driver_df[driver] = np.exp(driver_df[driver])
@@ -175,7 +175,7 @@ def Add(driver_input_data, energy_data, drivers_list, structure_variables_list,e
         driver_df = driver_df.drop(columns=['{}_log_ratio'.format(driver)])
 
     #sum up for each year to get total effect per year
-    driver_df = driver_df.groupby(time_variable).sum()
+    driver_df = driver_df.groupby(time_variable).sum(numeric_only=True)
 
     #FINAL FORMATTING:
     #drop unneeded columns
@@ -589,7 +589,7 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
 
 
         #sum the successive_structural_level_drivers by year and all the structural levels except the current one
-        successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]+hierarchy_list].groupby([time_variable]+hierarchy_list).sum().reset_index()
+        successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]+hierarchy_list].groupby([time_variable]+hierarchy_list).sum(numeric_only=True).reset_index()
 
         #NOW do this for each structural vairable in the hierarchy list (except the first one), but going backwards (so the last one is the first one))(i.e. going from j to i if there are 3 structural variables ijk):
         #times the variable successive_structural_level_drivers_{}'.format(str(structure_variable_index) by the previous structural vairables weighting_value_ and sum for each year and all the structural levels up to that one. this will be set as the new value for the successive_structural_level_drivers_{}'.format(str(structure_variable_index) for the next iteration
@@ -616,7 +616,7 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
                 mini_hierarchy_list.remove(hierarchy_variable)
 
                 #sum the new successive_structural_level_drivers by year and mini_hierarchy_list
-                successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]+mini_hierarchy_list].groupby([time_variable]+mini_hierarchy_list).sum().reset_index()
+                successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]+mini_hierarchy_list].groupby([time_variable]+mini_hierarchy_list).sum(numeric_only=True).reset_index()
 
         #times the weighting value for the first_structure_variable by the newly calculated value
         successive_structural_level_drivers = pd.merge(successive_structural_level_drivers, weighting_df, on=[time_variable, structure_variables_list[0]])
@@ -626,7 +626,7 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
         successive_structural_level_drivers['structural_driver_{}'.format(str(structure_variable_index))] = successive_structural_level_drivers['structural_driver_{}'.format(str(structure_variable_index))] * successive_structural_level_drivers['weighting_value_first_str_variable']
         
         #sum the successive_structural_level_drivers by year
-        successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]].groupby(time_variable).sum().reset_index()
+        successive_structural_level_drivers = successive_structural_level_drivers[[time_variable, 'intensity_driver_{}'.format(str(structure_variable_index)), 'structural_driver_{}'.format(str(structure_variable_index))]].groupby(time_variable).sum(numeric_only=True).reset_index()
 
         #calc the exponential
         successive_structural_level_drivers['intensity_driver_{}'.format(str(structure_variable_index))] = np.exp(successive_structural_level_drivers['intensity_driver_{}'.format(str(structure_variable_index))])
