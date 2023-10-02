@@ -43,16 +43,16 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
 
         #create category based on whether data is driver or change in energy use
-        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Percent change in {}'.format(energy_variable) else 'Driver')
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Multiplicative change in {}'.format(energy_variable) else 'Driver')
         #set title
 
         if graph_title == '':
             title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Multiplicative LMDI'
+            title = graph_title
 
         #plot
-        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Percent change in {}'.format(energy_variable), 'Driver'],"Driver":['Percent change in {}'.format(energy_variable), 'Activity']+structure_variables_list+[residual_variable1]})#,
+        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Multiplicative change in {}'.format(energy_variable), 'Driver'],"Driver":['Multiplicative change in {}'.format(energy_variable), 'Activity']+structure_variables_list+[residual_variable1]})#,
 
         fig.update_layout(
             font=dict(
@@ -84,16 +84,16 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
         
         #create category based on whether dfata is driver or change in erggy use
-        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Percent change in {}'.format(emissions_variable) else 'Driver')
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: i if i == 'Multiplicative change in {}'.format(emissions_variable) else 'Driver')
 
         #set title
         if graph_title == '':
             title = '{}{} - Multiplicative LMDI decomposition of emissions'.format(data_title, extra_identifier)
         else:
-            title = graph_title + '- Multiplicative LMDI decomposition of emissions'
+            title = graph_title
 
         #plot
-        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Change in {}'.format(emissions_variable), 'Driver'],"Driver":['Percent change in {}'.format(emissions_variable), 'Activity']+structure_variables_list+[residual_variable1, residual_variable2]})
+        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type', title=title, category_orders={"Line type":['Change in {}'.format(emissions_variable), 'Driver'],"Driver":['Multiplicative change in {}'.format(emissions_variable), 'Activity']+structure_variables_list+[residual_variable1, residual_variable2]})
 
         fig.update_layout(
             font=dict(
@@ -108,8 +108,8 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         #get data
         lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier))
 
-        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
-        lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Multiplicative change in {}'.format(energy_variable)
+        lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Multiplicative change in {}'.format(energy_variable)]
 
         #create list of driver names in the order we want them to appear in the graph
         driver_list = [activity_variable] + structure_variables_list + [residual_variable1]
@@ -118,16 +118,16 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
 
         #create category based on whether data is driver or change in energy use. because we dont want it to show in the graph we will just make driver a double space, and the change in enegry a singel space
-        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Percent change in {}'.format(energy_variable) else ' ')
+        mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Multiplicative change in {}'.format(energy_variable) else ' ')
 
         #set title
         if graph_title == '':
             title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Multiplicative LMDI'
+            title = graph_title
 
         #plot
-        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type',  category_orders={"Line type":['', ' '],"Driver":['Percent change in {}'.format(energy_variable)]+driver_list},title=title)#,
+        fig = px.line(mult_plot, x=time_variable, y="Value", color="Driver", line_dash = 'Line type',  category_orders={"Line type":['', ' '],"Driver":['Multiplicative change in {}'.format(energy_variable)]+driver_list},title=title)#,
 
         fig.update_layout(
             font=dict(
@@ -145,7 +145,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
 ######################################################
 ######################################################
 
-
+            
 def plot_additive_waterfall(data_title, extra_identifier, structure_variables_list, activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=False, time_variable='Year', graph_title='', residual_variable1='Energy intensity', residual_variable2='Emissions intensity', font_size=25,y_axis_min_percent_decrease=0.9,AUTO_OPEN=False, hierarchical=False, output_data_folder='output_data', plotting_output_folder='plotting_output'):
     """
     data used by this function:
@@ -188,7 +188,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         if graph_title == '':
             title = '{}{} - Additive LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Additive LMDI'
+            title = graph_title
 
         y = [add_plot_first_year_energy-base_amount, 
         add_plot[activity_variable].iloc[0]] + add_plot[structure_variables_list].iloc[0].tolist() + [add_plot[residual_variable1].iloc[0],
@@ -265,7 +265,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         if graph_title == '':
             title = '{}{} - Additive LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Additive LMDI'
+            title = graph_title
 
         fig = go.Figure(go.Waterfall(
             orientation = "v",
@@ -306,13 +306,16 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'additive_waterfall.png')
 
     elif emissions_divisia == False and hierarchical == True:
-        print('Please note that the hierarchical LMDI method only produces a multiplicative output. So the output will be a multiplicative waterfall plot.')
+        # print('Please note that the hierarchical LMDI method only produces a multiplicative output. So the output will be a multiplicative waterfall plot.')
         
         #get data
         lmdi_output_multiplicative = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier))
-
-        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Percent change in {}'.format(energy_variable)
-        lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Percent change in {}'.format(energy_variable)]
+        #Regardless of the column names, rename data in order of, 'Year', activity_variable, structure_variables_list, residual_variable1, 'Multiplicative change in {}'.format(energy_variable)
+        try:
+            lmdi_output_multiplicative.columns = [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Multiplicative change in {}'.format(energy_variable)]
+        except ValueError:# Length mismatch: Expected axis has 7 elements, new values have 6 elements
+            breakpoint()
+            raise Exception('Expected axis has these cols: {} whereas new values has these cols: {}'.format(lmdi_output_multiplicative.columns, [time_variable, activity_variable] + structure_variables_list + [residual_variable1, 'Multiplicative change in {}'.format(energy_variable)]))
 
         #filter data to only include the final year
         lmdi_output_multiplicative = lmdi_output_multiplicative[lmdi_output_multiplicative[time_variable] == lmdi_output_multiplicative[time_variable].max()]
@@ -323,7 +326,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         # mult_plot = pd.melt(lmdi_output_multiplicative, id_vars=[time_variable], var_name='Driver', value_name='Value')
 
         # #create category based on whether data is driver or change in energy use. because we dont want it to show in the graph we will just make driver a double space, and the change in enegry a singel space
-        # mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Percent change in {}'.format(energy_variable) else ' ')
+        # mult_plot['Line type'] = mult_plot['Driver'].apply(lambda i: '' if i == 'Multiplicative change in {}'.format(energy_variable) else ' ')
         
         #rename to add_plot to make it easier to copy and paste code
         add_plot = lmdi_output_multiplicative.copy()
@@ -336,13 +339,11 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         if graph_title == '':
             title = '{}{} - Multiplicative LMDI'.format(data_title, extra_identifier)
         else:
-            title = graph_title + ' - Multiplicative LMDI'
+            title = graph_title
 
         y = [add_plot[activity_variable].iloc[0]] + add_plot[structure_variables_list].iloc[0].tolist() + [add_plot[residual_variable1].iloc[0],
-        add_plot["Percent change in {}".format(energy_variable)].iloc[0]]
-        #minus 1 from all values in the list to make them relative to 0
-        y = [i-1 for i in y]
-        x = [activity_variable] + structure_variables_list + [residual_variable1,'Percent change in {}'.format(energy_variable)]
+        add_plot["Multiplicative change in {}".format(energy_variable)].iloc[0]]
+        x = [activity_variable] + structure_variables_list + [residual_variable1,'Multiplicative change in {}'.format(energy_variable)]
 
         fig = go.Figure(go.Bar(
             orientation = "v",
@@ -365,8 +366,8 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
             # decreasing = {"marker":{"color":"#93C0AC"}},
             # increasing = {"marker":{"color":"#EB9C98"}},
             # totals = {"marker":{"color":"#11374A"}}
-            #color bars based on their x axis value. if the x axis value is 'Percent change in {}'.format(energy_variable) then make it "#11374A", otherwise if the y axis value is positive make it "#EB9C98" and if its negative make it "#93C0AC"
-            marker_color = ["#11374A" if i == 'Percent change in {}'.format(energy_variable) else "#EB9C98" if j > 0 else "#93C0AC" for i,j in zip(x,y)]            
+            #color bars based on their x axis value. if the x axis value is 'Multiplicative change in {}'.format(energy_variable) then make it "#11374A", otherwise if the y axis value is positive make it "#EB9C98" and if its negative make it "#93C0AC"
+            marker_color = ["#11374A" if i == 'Multiplicative change in {}'.format(energy_variable) else "#EB9C98" if j > 1 else "#93C0AC" for i,j in zip(x,y)]            
 
         ))
         dotted_line_index = len(x) - 1.5
@@ -383,3 +384,64 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_waterfall.png')
 ##%%
 
+
+def concat_waterfall_inputs(data_title,new_extra_identifier, extra_identifiers,activity_variables, new_activity_variable,time_variable='Year',  hierarchical=False, output_data_folder='output_data'):
+    """
+    This will take in a list of the data titles, extra identifiers, and activity variables and will create a dataframe with all the data in it. The effects will be concatenated together, and the total energy/emissions will be added together. This will then be used to create a waterfall plot. It is important that the number of columns in each dataset is the same.
+    
+    
+    data used by this function:
+        
+        data_title eg. 'outlook-transport-divisia'
+        extra_identifier eg. 'PASSENGER_REF'
+        lmdi_output_multiplicative eg. pd.read_csv('output_data/{}{}_lmdi_output_multiplicative.csv'.format(data_title, extra_identifier))
+        lmdi_output_additive = pd.read_csv('output_data/{}{}_lmdi_output_additive.csv'.format(data_title, extra_identifier))
+        emissions_divisia eg. False
+        structure_variables_list eg. ['Economy','Vehicle Type', 'Drive']
+        graph_title eg. 'Road passenger - Drivers of changes in energy use (Ref)'
+        residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
+        residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
+    """
+    if hierarchical == False:
+        lmdi_output_additive = pd.DataFrame()
+        for i in range(len(extra_identifiers)):
+            extra_identifier_ = extra_identifiers[i]
+            activity_variable = activity_variables[i]
+            
+            lmdi_output_additive_ = pd.read_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, extra_identifier_))
+            #rename the activity varaialbe to the new activity variable
+            lmdi_output_additive_.rename(columns={activity_variable+' effect':new_activity_variable+' effect'}, inplace=True)
+            #and change Total_{activity_variable} to Total_{new_activity_variable}
+            lmdi_output_additive_.rename(columns={'Total_{}'.format(activity_variable):'Total_{}'.format(new_activity_variable)}, inplace=True)
+            #check the column names are the same
+            if i != 0:
+                if lmdi_output_additive_.columns.tolist() != lmdi_output_additive.columns.tolist():
+                    breakpoint()
+                    raise Exception('The column names in the datasets {} and {} are not the same. Please check the column names in the datasets.'.format(lmdi_output_additive.columns.tolist(), lmdi_output_additive_.columns.tolist()))
+            #concatenate the data
+            lmdi_output_additive = pd.concat([lmdi_output_additive, lmdi_output_additive_], axis=0)
+        #sum up additive effects
+        lmdi_output_additive = lmdi_output_additive.groupby([time_variable]).sum(numeric_only=True).reset_index()
+        #save with new id so we can plot it
+        lmdi_output_additive.to_csv('{}/{}{}_lmdi_output_additive.csv'.format(output_data_folder,data_title, new_extra_identifier), index=False)
+    # elif hierarchical:
+    #     lmdi_output_multiplicative = pd.DataFrame() 
+    #     for i in range(len(extra_identifiers)):
+    #         extra_identifier_ = extra_identifiers[i]
+    #         activity_variable = activity_variables[i]
+            
+    #         lmdi_output_multiplicative_ = pd.read_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, extra_identifier_))
+    #         #rename the activity varaialbe to the new activity variable
+    #         lmdi_output_multiplicative_.rename(columns={activity_variable + ' effect':new_activity_variable + ' effect'}, inplace=True)
+    #         #and change Total_{activity_variable} to Total_{new_activity_variable}
+    #         lmdi_output_multiplicative_.rename(columns={'Total_{}'.format(activity_variable):'Total_{}'.format(new_activity_variable)}, inplace=True)
+    #         #check the column names are the same
+    #         if i != 0:
+    #             if lmdi_output_multiplicative_.columns.tolist() != lmdi_output_multiplicative.columns.tolist():
+    #                 breakpoint()
+    #                 raise Exception('The column names in the datasets {} and {} are not the same. Please check the column names in the datasets.'.format(lmdi_output_multiplicative.columns.tolist(), lmdi_output_multiplicative_.columns.tolist()))
+    #         #concatenate the data
+    #         lmdi_output_multiplicative = pd.concat([lmdi_output_multiplicative, lmdi_output_multiplicative_], axis=0)
+    #     #save with new id so we can plot it
+    #     lmdi_output_multiplicative.to_csv('{}/{}{}_hierarchical_multiplicative_output.csv'.format(output_data_folder,data_title, new_extra_identifier), index=False)
+                

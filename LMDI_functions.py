@@ -80,7 +80,7 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
 
     #calculate ratio of energy for each year commpared to the base year using the 'Change in energy_top' variable. To do this we need to rejoin the base year data to the driver df to calculate ('change in energy'/base year energy) + 1 (this is equivalent to the ratio between other eyars and base years in total energy)
     driver_df['{}_base_year'.format(energy_variable)] = energy_base_year_sum[energy_variable].values[0]
-    driver_df['Percent change in {}'.format(energy_variable)] = (driver_df['Change in {}_top'.format(energy_variable)]/driver_df['{}_base_year'.format(energy_variable)]) + 1
+    driver_df['Multiplicative change in {}'.format(energy_variable)] = (driver_df['Change in {}_top'.format(energy_variable)]/driver_df['{}_base_year'.format(energy_variable)]) + 1
 
     #FINAL FORMATTING:
     #drop unneeded columns
@@ -109,7 +109,7 @@ def Mult(driver_input_data, energy_data, drivers_list, structure_variables_list,
 
     #check that the product of drivers in each year is equal to the percent change in energy
     lmdi_output_multiplicative['product'] = lmdi_output_multiplicative[drivers_list_new].product(axis=1)
-    lmdi_output_multiplicative['difference'] = lmdi_output_multiplicative['product'] - lmdi_output_multiplicative['Percent change in {}'.format(energy_variable)]
+    lmdi_output_multiplicative['difference'] = lmdi_output_multiplicative['product'] - lmdi_output_multiplicative['Multiplicative change in {}'.format(energy_variable)]
     total_difference = lmdi_output_multiplicative['difference'].sum().sum()
     if abs(total_difference) > 0.01:
         breakpoint()
@@ -649,28 +649,28 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
         drivers_df = drivers_df.merge(successive_structural_level_drivers_dict[structure_variable_index], on=time_variable)
 
     #now calculate the ratio between other eyars and base years in total energy
-    pct_change = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
+    mult_change = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
     #separate the base year and other years
-    energy_base_year = pct_change[pct_change[time_variable]==base_year]
-    energy_other_years = pct_change[pct_change[time_variable]!=base_year]
+    energy_base_year = mult_change[mult_change[time_variable]==base_year]
+    energy_other_years = mult_change[mult_change[time_variable]!=base_year]
     #merge the two together
-    pct_change = energy_other_years.copy()
-    pct_change['energy_base_year'] = energy_base_year[energy_variable].values[0]
+    mult_change = energy_other_years.copy()
+    mult_change['energy_base_year'] = energy_base_year[energy_variable].values[0]
     #calc the ratio
-    pct_change['energy_pct_change'] = pct_change[energy_variable]/pct_change['energy_base_year'] 
+    mult_change['energy_mult_change'] = mult_change[energy_variable]/mult_change['energy_base_year'] 
 
     #merge the drivers with the ratio
-    drivers_df = drivers_df.merge(pct_change[[time_variable, 'energy_pct_change']], on=time_variable)
+    drivers_df = drivers_df.merge(mult_change[[time_variable, 'energy_mult_change']], on=time_variable)
 
     #rename the columns
-    drivers_df = drivers_df.rename(columns={'activity_driver': '{}'.format(activity_variable), 'first_structural_level_structural_driver': '{}'.format(structure_variables_list[0]),'energy_pct_change': 'Percent change in {}'.format(energy_variable)})
+    drivers_df = drivers_df.rename(columns={'activity_driver': '{}'.format(activity_variable), 'first_structural_level_structural_driver': '{}'.format(structure_variables_list[0]),'energy_mult_change': 'Multiplicative change in {}'.format(energy_variable)})
 
     for structure_variable in structure_variables_list[1:]:
         structure_variable_index = structure_variables_list.index(structure_variable)
         drivers_df = drivers_df.rename(columns={'intensity_driver_{}'.format(str(structure_variable_index)): '{} intensity'.format(structure_variable), 'structural_driver_{}'.format(str(structure_variable_index)): '{}'.format(structure_variable)})
 
-    #add effect to the end of all names except 'Percent change in {}'.format(energy_variable) and Year
-    drivers_df.columns = [col + ' effect' if col not in ['Percent change in {}'.format(energy_variable), time_variable] else col for col in drivers_df.columns]
+    #add effect to the end of all names except 'Multiplicative change in {}'.format(energy_variable) and Year
+    drivers_df.columns = [col + ' effect' if col not in ['Multiplicative change in {}'.format(energy_variable), time_variable] else col for col in drivers_df.columns]
 
     #for ease of use we didnt remove the intensity drivers for all structural variables except the last one. Now we will remove them.
     for structure_variable in structure_variables_list[1:-1]:
@@ -680,11 +680,11 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
 
     #check that the product of drivers in each year is equal to the percent change in energy
     drivers_list = drivers_df.columns.tolist()
-    drivers_list.remove('Percent change in {}'.format(energy_variable))
+    drivers_list.remove('Multiplicative change in {}'.format(energy_variable))
     drivers_list.remove(time_variable)
 
     drivers_df['product'] = drivers_df[drivers_list].product(axis=1)
-    drivers_df['difference'] = drivers_df['product'] - drivers_df['Percent change in {}'.format(energy_variable)]
+    drivers_df['difference'] = drivers_df['product'] - drivers_df['Multiplicative change in {}'.format(energy_variable)]
     total_difference = drivers_df['difference'].sum().sum()
     if abs(total_difference) > 0.01:
         breakpoint()#this started happening in 25th september. dont know why

@@ -100,7 +100,7 @@ def run_divisia(data_title, extra_identifier, activity_data, energy_data, struct
         ###################################
         #replace energy in 'change in energy' col names with emissions
         lmdi_output_additive.rename(columns={'Change in {}'.format(energy_variable):'Change in {}'.format(emissions_variable)}, inplace=True)
-        lmdi_output_multiplicative.rename(columns={'Percent change in {}'.format(energy_variable):'Percent change in {}'.format(emissions_variable)}, inplace=True)
+        lmdi_output_multiplicative.rename(columns={'Multiplicative change in {}'.format(energy_variable):'Multiplicative change in {}'.format(emissions_variable)}, inplace=True)
 
         ###################################
         #add emissions and activity (summed per year) as a column since this is very useful for analysis
