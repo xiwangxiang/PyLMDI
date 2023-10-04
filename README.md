@@ -16,6 +16,8 @@ Unfortunately I cannot directly give you the paper for which the method is based
 
 If you want any help understanding the methods/code please feel free to reach out to me, they are pretty difficult to get your head around and i am keen to make sure somoene else doesn't have to struggle as much as i did!
 
+Otherwise ChatGPT is really useful for explaining it (probably better than me).
+
 ## About this repo
 This version of PyLMDI is a fork of a github library i found but adjusted to be easier to use and understand. It is a work in progress for APERC staff but it can be used and updated by anyone.
 
