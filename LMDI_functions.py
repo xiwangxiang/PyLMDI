@@ -693,3 +693,142 @@ def hierarchical_LMDI(energy_data, activity_data, energy_variable, activity_vari
     drivers_df = drivers_df.drop(columns=['product', 'difference'])
     #now we are done. return drivers_df
     return drivers_df
+
+
+# def convert_multiplicative_to_additive(multiplicative_output, energy_data,energy_variable, time_variable, extra_identifier):
+#     #take in the multiplicative output and convert it to additive by timesing the effects by the energy data in the base year:
+#     additive_output = multiplicative_output.copy()
+#     drivers_list = additive_output.columns.tolist()
+#     drivers_list.remove('Multiplicative change in {}'.format(energy_variable))
+#     drivers_list.remove(time_variable)
+#     base_year = energy_data[time_variable].min()
+#     energy_data_sum = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
+#     energy_base_year = energy_data_sum[energy_data_sum[time_variable]==base_year][energy_variable].values[0]
+#     additive_output = additive_output.merge(energy_data_sum, on=time_variable)
+    
+#     for driver in drivers_list:
+#         additive_output[driver] = (additive_output[driver] * energy_base_year)  - energy_base_year
+#     additive_output['Additive change in {}'.format(energy_variable)] = (additive_output['Multiplicative change in {}'.format(energy_variable)] * energy_base_year) - energy_base_year
+    
+#     #test whether the sum of the additive effects is equal to the additive change in energy
+#     additive_output['sum'] = additive_output[drivers_list].sum(axis=1)
+#     additive_output['difference'] = additive_output['sum'] - additive_output['Additive change in {}'.format(energy_variable)]
+#     total_difference = additive_output['difference'].sum().sum()
+#     if abs(total_difference) > 0.01:
+#         breakpoint()#this started happening in 25th september. dont know why
+#         print('WARNING: The sum of the hierarchical additive drivers in each year for {} is not equal to the additive change in energy. The differences are {}'.format(extra_identifier,additive_output[[time_variable, 'Additive change in {}'.format(energy_variable), 'difference']].loc[additive_output['difference']!=0]))
+#     #test whether the sum of effects plus base year energy is equal to the total energy
+#     additive_output['sum'] = additive_output['sum'] + energy_base_year
+#     additive_output['difference'] = additive_output['sum'] - additive_output[energy_variable]
+#     total_difference = additive_output['difference'].sum().sum()
+#     if abs(total_difference) > 0.01:
+#         breakpoint()
+#         print('WARNING: The sum of the hierarchical additive drivers in each year for {} is not equal to the total energy. The differences are {}'.format(extra_identifier,additive_output[[time_variable, energy_variable, 'difference']].loc[additive_output['difference']!=0]))
+#     #drop the sum and difference columns
+#     additive_output = additive_output.drop(columns=['sum', 'difference', energy_variable, 'Multiplicative change in {}'.format(energy_variable)])
+    
+#     return additive_output
+    
+def multiplicative_to_additive(base_value, multiplicative_effects):
+    additive_effects = []
+    current_value = base_value
+
+    for effect in multiplicative_effects:
+        new_value = current_value * effect  # Apply multiplicative effect
+        additive_effect = new_value - current_value  # Calculate additive effect
+        additive_effects.append(additive_effect)
+        current_value = new_value  # Update current value for next iteration
+
+    return additive_effects
+
+def convert_multiplicative_to_additive(multiplicative_output, energy_data, activity_data, activity_variable, energy_variable, time_variable, extra_identifier):
+    additive_output = multiplicative_output.copy()
+    drivers_list = additive_output.columns.tolist()
+    drivers_list.remove('Multiplicative change in {}'.format(energy_variable))
+    drivers_list.remove(time_variable)
+    
+    base_year = energy_data[time_variable].min()
+    energy_data_sum = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
+    energy_base_year = energy_data_sum[energy_data_sum[time_variable] == base_year][energy_variable].values[0]
+    activity_data_sum = activity_data.groupby([time_variable])[activity_variable].sum().reset_index()
+    
+    additive_output = additive_output.merge(energy_data_sum, on=time_variable, how='outer')
+    additive_output = additive_output.merge(activity_data_sum, on=time_variable, how='outer')
+    
+    for index, row in additive_output.iterrows():
+        multiplicative_effects = row[drivers_list].values
+        additive_effects = multiplicative_to_additive(energy_base_year, multiplicative_effects)
+        for driver, additive_effect in zip(drivers_list, additive_effects):
+            additive_output.at[index, driver] = additive_effect
+    
+    additive_output['Additive change in {}'.format(energy_variable)] = additive_output[drivers_list].sum(axis=1)
+    
+    additive_output['difference'] = additive_output['Additive change in {}'.format(energy_variable)] - (additive_output[energy_variable] - energy_base_year)
+    total_difference = additive_output['difference'].abs().sum()
+    
+    if total_difference > 0.01:
+        print(f'WARNING: The sum of the hierarchical additive drivers in each year for {extra_identifier} is not equal to the total energy. The differences are {additive_output[[time_variable, energy_variable, "difference"]].loc[additive_output["difference"] != 0]}')
+    # Drop the unnecessary columns
+    additive_output = additive_output.drop(columns=['difference', 'Multiplicative change in {}'.format(energy_variable)])
+    # Rename Activity to 'Total_{}'.format(activity_variable) and energy to 'Total {}'.format(energy_variable)
+    additive_output.rename(columns={energy_variable: 'Total {}'.format(energy_variable), activity_variable: 'Total_{}'.format(activity_variable)}, inplace=True)
+    
+    return additive_output
+
+
+
+
+
+# def convert_multiplicative_to_additive(multiplicative_output, energy_data,activity_data,activity_variable, energy_variable, time_variable, extra_identifier):
+#     # Deep copy to ensure the original dataframe is not modified
+#     additive_output = multiplicative_output.copy()
+
+#     # Identify the drivers
+#     drivers_list = additive_output.columns.tolist()
+#     drivers_list.remove('Multiplicative change in {}'.format(energy_variable))
+#     drivers_list.remove(time_variable)
+
+#     # Get the base year and the energy sum for the base year
+#     base_year = energy_data[time_variable].min()
+#     energy_data_sum = energy_data.groupby([time_variable])[energy_variable].sum().reset_index()
+#     energy_base_year = energy_data_sum[energy_data_sum[time_variable] == base_year][energy_variable].values[0]
+#     activity_data_sum = activity_data.groupby([time_variable])[activity_variable].sum().reset_index()
+
+#     # Merge to get the energy_variable for each year
+#     additive_output = additive_output.merge(energy_data_sum, on=time_variable)
+#     additive_output = additive_output.merge(activity_data_sum, on=time_variable)
+#     # Convert multiplicative effects to logarithmic scale
+#     for driver in drivers_list:
+#         additive_output[driver] = np.log(additive_output[driver])
+#     additive_output['Log change in {}'.format(energy_variable)] = np.log(additive_output['Multiplicative change in {}'.format(energy_variable)])
+
+#     # Sum the log effects
+#     additive_output['sum'] = additive_output[drivers_list].sum(axis=1)
+    
+#     # Check the equality by comparing the sum of log effects to the log change in energy_variable
+#     additive_output['difference'] = additive_output['sum'] - additive_output['Log change in {}'.format(energy_variable)]
+#     total_difference = additive_output['difference'].abs().sum()
+    
+#     if total_difference > 0.01:
+#         breakpoint()
+#         print(f'WARNING: The sum of the hierarchical additive drivers in each year for {extra_identifier} is not equal to the additive change in energy. The differences are {additive_output[[time_variable, f"Log change in {energy_variable}", "difference"]].loc[additive_output["difference"] != 0]}')
+    
+#     # Convert the sum of log effects and the log change in energy_variable back to the original scale
+#     additive_output['sum'] = np.exp(additive_output['sum']) * energy_base_year
+#     additive_output['Additive change in {}'.format(energy_variable)] = np.exp(additive_output['Log change in {}'.format(energy_variable)]) * energy_base_year - energy_base_year
+    
+#     # Check the equality in the original scale
+#     additive_output['difference'] = additive_output['sum'] - additive_output[energy_variable]
+#     total_difference = additive_output['difference'].abs().sum()
+    
+#     if total_difference > 0.01:
+#         breakpoint()
+#         print(f'WARNING: The sum of the hierarchical additive drivers in each year for {extra_identifier} is not equal to the total energy. The differences are {additive_output[[time_variable, energy_variable, "difference"]].loc[additive_output["difference"] != 0]}')
+    
+#     breakpoint()
+#     # Drop the unnecessary columns
+#     additive_output = additive_output.drop(columns=['sum', 'difference', 'Multiplicative change in {}'.format(energy_variable), f'Log change in {energy_variable}'])
+#     #rename Activity to 'Total_{}'.format(activity_variable) and energy to 'Total {}'.format(energy_variable)
+#     additive_output.rename(columns={energy_variable: 'Total {}'.format(energy_variable), activity_variable: 'Total_{}'.format(activity_variable)}, inplace=True)
+#     breakpoint()
+#     return additive_output
