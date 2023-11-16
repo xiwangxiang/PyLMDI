@@ -29,7 +29,7 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
         emissions_divisia eg. False
         structure_variables_list eg. ['Economy','Vehicle Type', 'Drive']
         graph_title eg. 'Road passenger - Drivers of changes in energy use (Ref)'
-        residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
+        residual_variable1 eg. f'{energy_variable} intensity' - this can be used to make the residual variable a bit more explanatory
         residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
     """
     if emissions_divisia == False and hierarchical == False:
@@ -64,7 +64,6 @@ def plot_multiplicative_timeseries(data_title, extra_identifier, structure_varia
                 size=font_size
             )
         )
-
         plotly.offline.plot(fig, filename=plotting_output_folder + data_title + extra_identifier + '_multiplicative_timeseries.html', auto_open=AUTO_OPEN)
         #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + 'multiplicative_timeseries.png')
 
@@ -176,7 +175,7 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '', regex=True)
         
         #replace 'Energy intensity' with residual_variable1
-        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(f'{energy_variable} intensity', residual_variable1)
 
         #format data for waterfall plot
         #use the latest year, and the energy value for the first year
@@ -238,7 +237,12 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
                 size=font_size
             ), waterfallgap = 0.01
         )
-
+        
+        #create unit for y axis
+        fig.update_yaxes(title_text='PJ')
+        #add a slight slant to the x axis labels
+        fig.update_xaxes(tickangle=25)
+        
         plotly.offline.plot(fig, filename=plotting_output_folder + data_title + extra_identifier + '.html',auto_open=AUTO_OPEN)
         #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + '.png')
 
@@ -252,8 +256,8 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
         #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '', regex=True)
 
-        #replace 'Energy intensity' with residual_variable1
-        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
+        #replace f'{energy_variable} intensity' with residual_variable1
+        lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(f'{energy_variable} intensity', residual_variable1)
         #replace 'Emissions intensity' with residual_variable2
         lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Emissions intensity', residual_variable2)
         
@@ -389,6 +393,11 @@ def plot_additive_waterfall(data_title, extra_identifier, structure_variables_li
             ), waterfallgap = 0.01
         )
 
+        #create unit for y axis
+        fig.update_yaxes(title_text='PJ')
+        #add a slight slant to the x axis labels
+        fig.update_xaxes(tickangle=25)
+        
         plotly.offline.plot(fig, filename=plotting_output_folder + data_title + extra_identifier +'_additive_hierarchical.html',auto_open=AUTO_OPEN)
         #fig.write_image("./plotting_output/static/" + data_title + extra_identifier + '.png')
 ##%%
@@ -408,7 +417,7 @@ def concat_waterfall_inputs(data_title,new_extra_identifier, extra_identifiers,a
         emissions_divisia eg. False
         structure_variables_list eg. ['Economy','Vehicle Type', 'Drive']
         graph_title eg. 'Road passenger - Drivers of changes in energy use (Ref)'
-        residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
+        residual_variable1 eg. f'{energy_variable} intensity' - this can be used to make the residual variable a bit more explanatory
         residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
     """
     if hierarchical == False:
@@ -468,7 +477,7 @@ def plot_combined_waterfalls(data_title,graph_titles,extra_identifiers, new_extr
         emissions_divisia eg. False
         structure_variables_list eg. ['Economy','Vehicle Type', 'Drive']
         graph_title eg. 'Road passenger - Drivers of changes in energy use (Ref)'
-        residual_variable1 eg. 'Energy intensity' - this can be used to make the residual variable a bit more explanatory
+        residual_variable1 eg. f'{energy_variable} intensity' - this can be used to make the residual variable a bit more explanatory
         residual_variable2 eg. 'Emissions intensity' - this can be used to make the residual variable a bit more explanatory
     """
     
@@ -493,8 +502,8 @@ def plot_combined_waterfalls(data_title,graph_titles,extra_identifiers, new_extr
             #remove ' effect' where it is at the end of all column names using regex ($ marks the end of the string)
             lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(' effect$', '', regex=True)
             
-            #replace 'Energy intensity' with residual_variable1
-            lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace('Energy intensity', residual_variable1)
+            #replace f'{energy_variable} intensity' with residual_variable1
+            lmdi_output_additive.columns = lmdi_output_additive.columns.str.replace(f'{energy_variable} intensity', residual_variable1)
             
             #format data for waterfall plot
             #use the latest year, and the energy value for the first year
@@ -554,7 +563,12 @@ def plot_combined_waterfalls(data_title,graph_titles,extra_identifiers, new_extr
             waterfallgap=0.01,
             showlegend=False
         )
-
+        
+        #create unit for y axis
+        fig.update_yaxes(title_text='PJ')
+        #add a slight slant to the x axis labels
+        fig.update_xaxes(tickangle=25)
+        
         # Save the figure to an HTML file
         pyo.plot(fig, filename=plotting_output_folder + data_title + new_extra_identifier + '_combined.html',auto_open=AUTO_OPEN)
         
@@ -641,6 +655,11 @@ def plot_combined_waterfalls(data_title,graph_titles,extra_identifiers, new_extr
             showlegend=False
         )
 
+        #create unit for y axis
+        fig.update_yaxes(title_text='PJ')
+        #add a slight slant to the x axis labels 
+        fig.update_xaxes(tickangle=25)
+        
         # Save the figure to an HTML file
         pyo.plot(fig, filename=plotting_output_folder + data_title + new_extra_identifier + '_combined.html',auto_open=AUTO_OPEN)
 
