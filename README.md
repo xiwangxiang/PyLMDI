@@ -71,3 +71,9 @@ run: conda env create --prefix ./env_jupyter --file ./config/env_jupyter.yml
 Then: conda activate ./env_jupyter
 
 Note that installing those libraries in the yml files will result in a few other dependencies also being installed.
+
+## Some example graphs:
+From analysis of EV emissions and including post-hoc inclusion of the effect of electricity emissions. This is for projections for China in the early stages of the APERC 9th Edition Outlook.
+![image](https://github.com/asia-pacific-energy-research-centre/PyLMDI/assets/16755264/9ef53c8e-9400-497d-8714-4d47e258a3fe)
+![image](https://github.com/asia-pacific-energy-research-centre/PyLMDI/assets/16755264/88761ff0-823f-4943-bcdf-d5b68b7f7600)
+
