@@ -1,0 +1,11 @@
+name: aperc_model_finn_no_jupyter
+dependencies:
+  - plotly=5.10.0=pyhd8ed1ab_0
+  - pandas=1.5.0=py310h1c4a608_0
+  - numpy=1.23.3=py310h4a8f9c9_0
+  - plotly=5.10.0=pyhd8ed1ab_0
+  - matplotlib=3.6.0=py310h5588dad_0
+  - openpyxl=3.0.10=py310h8d17308_1 #for some reason this is necessary
+  - pip=22.2.2=pyhd8ed1ab_0
+  - pip:
+    - kaleido==0.2.1 #for plotly
